@@ -15,6 +15,7 @@ const peerDependencies = [
 
 export default defineConfig({
   plugins: [react()],
+  publicDir: false,
   build: {
     lib: {
       entry: resolve(__dirname, 'src/lib/index.ts'),
