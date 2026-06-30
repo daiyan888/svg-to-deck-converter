@@ -12,10 +12,8 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "svg-to-deck-converter": ["src/index.ts"]
+      "svg-to-deck-converter": ["./src/index.ts"]
     },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
