@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:lib": "vite build --config vite.lib.config.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
+  "exports": {
+    ".": "./lib/svg-to-deck.js"
+  },
+  "files": [
+    "lib"
+  ],
   "dependencies": {
     "@antv/infographic": "^0.2.19",
     "@tiptap/core": "^3.27.1",
