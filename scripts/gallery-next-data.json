@@ -1,0 +1,12 @@
+{
+  "props": {
+    "pageProps": {}
+  },
+  "page": "/gallery",
+  "query": {},
+  "buildId": "SWHRB2LpiWR4Yo_aP31Oy",
+  "nextExport": true,
+  "autoExport": true,
+  "isFallback": false,
+  "scriptLoader": []
+}

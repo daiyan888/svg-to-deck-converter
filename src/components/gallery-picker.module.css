@@ -1,0 +1,51 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(240px, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}

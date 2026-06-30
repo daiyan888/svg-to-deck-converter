@@ -1,0 +1,52 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+
+.controls {
+  flex-shrink: 0;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.slider {
+  flex: 1;
+  min-width: 80px;
+  accent-color: #4f46e5;
+}
+
+.value {
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 280px;
+  max-height: 480px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.sizer {
+  position: relative;
+}
+
+.content {
+  transform-origin: top left;
+  position: absolute;
+  top: 0;
+  left: 0;
+}

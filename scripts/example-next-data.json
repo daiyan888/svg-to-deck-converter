@@ -1,0 +1,16 @@
+{
+  "props": {
+    "pageProps": {
+      "template": "chart-bar-plain-text"
+    },
+    "__N_SSG": true
+  },
+  "page": "/gallery/[template]",
+  "query": {
+    "template": "chart-bar-plain-text"
+  },
+  "buildId": "SWHRB2LpiWR4Yo_aP31Oy",
+  "isFallback": false,
+  "gsp": true,
+  "scriptLoader": []
+}

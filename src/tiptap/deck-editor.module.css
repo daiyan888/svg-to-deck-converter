@@ -1,0 +1,25 @@
+.deckEditor {
+  background: #fff;
+  overflow: visible;
+}
+
+.deckEditor :global(.tiptap) {
+  outline: none;
+  min-height: 0;
+}
+
+.deckEditor :global(.ProseMirror) {
+  padding: 0;
+  min-height: 0;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
