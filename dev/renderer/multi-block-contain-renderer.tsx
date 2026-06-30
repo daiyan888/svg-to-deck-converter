@@ -1,4 +1,4 @@
-import type { MultiBlockContainNode, ParagraphNode, TextNode } from '../types/deck';
+import type { MultiBlockContainNode, ParagraphNode, TextNode } from 'svg-to-deck-converter';
 import { buildTextColorCss } from '../tiptap/text-color-style';
 import styles from './deck-renderer.module.css';
 

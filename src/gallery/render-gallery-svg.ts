@@ -1,7 +1,16 @@
-import { Infographic } from '@antv/infographic';
+import { Infographic, type InfographicOptions } from '@antv/infographic';
 
 const RENDER_WIDTH = 960;
 const RENDER_HEIGHT = 640;
+
+export interface RenderInfographicSize {
+  width?: number;
+  height?: number;
+}
+
+function isBrowserEnvironment(): boolean {
+  return typeof document !== 'undefined' && typeof document.createElement === 'function';
+}
 
 function waitForInfographicReady(
   infographic: Infographic,
@@ -22,14 +31,20 @@ function waitForInfographicReady(
   return Promise.race([
     Promise.all([loaded, fontsReady]).then(() => undefined),
     new Promise<void>((_, reject) => {
-      window.setTimeout(() => reject(new Error('渲染 Gallery SVG 超时')), timeoutMs);
+      window.setTimeout(() => reject(new Error('渲染 Infographic SVG 超时')), timeoutMs);
     }),
   ]);
 }
 
-export async function renderGallerySvgFromSyntax(syntax: string): Promise<string> {
+async function renderInBrowser(
+  options: string | Partial<InfographicOptions>,
+  size: RenderInfographicSize,
+): Promise<string> {
+  const width = size.width ?? RENDER_WIDTH;
+  const height = size.height ?? RENDER_HEIGHT;
+
   const mount = document.createElement('div');
-  mount.style.cssText = `position:fixed;left:-10000px;top:0;width:${RENDER_WIDTH}px;height:${RENDER_HEIGHT}px;pointer-events:none;opacity:0;`;
+  mount.style.cssText = `position:fixed;left:-10000px;top:0;width:${width}px;height:${height}px;pointer-events:none;opacity:0;`;
   document.body.appendChild(mount);
 
   const infographic = new Infographic({
@@ -39,14 +54,14 @@ export async function renderGallerySvgFromSyntax(syntax: string): Promise<string
   });
 
   try {
-    infographic.render(syntax);
+    infographic.render(options);
     await waitForInfographicReady(infographic);
 
     const svgEl = mount.querySelector('svg');
     if (!svgEl) {
       throw new Error('未找到渲染后的 SVG 元素');
     }
-    // 直接序列化 DOM，保留 <defs> 内 linearGradient 等渐变定义（toDataURL 可能丢失）
+
     return new XMLSerializer().serializeToString(svgEl);
   } finally {
     infographic.destroy();
@@ -54,3 +69,32 @@ export async function renderGallerySvgFromSyntax(syntax: string): Promise<string
   }
 }
 
+async function renderInNode(
+  options: string | Partial<InfographicOptions>,
+  size: RenderInfographicSize,
+): Promise<string> {
+  const { renderToString } = await import('@antv/infographic/ssr');
+  return renderToString(options as Parameters<typeof renderToString>[0], {
+    width: size.width ?? RENDER_WIDTH,
+    height: size.height ?? RENDER_HEIGHT,
+  });
+}
+
+/**
+ * 在浏览器或 Node 环境中渲染 Infographic，返回 SVG 字符串。
+ * 浏览器走 DOM 渲染；Node 走 @antv/infographic/ssr（避免污染 globalThis.window）。
+ */
+export async function renderInfographicSvg(
+  options: string | Partial<InfographicOptions>,
+  size: RenderInfographicSize = {},
+): Promise<string> {
+  if (isBrowserEnvironment()) {
+    return renderInBrowser(options, size);
+  }
+
+  return renderInNode(options, size);
+}
+
+export async function renderGallerySvgFromSyntax(syntax: string): Promise<string> {
+  return renderInfographicSvg(syntax);
+}

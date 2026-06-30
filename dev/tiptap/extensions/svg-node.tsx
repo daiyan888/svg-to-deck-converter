@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { SvgFromCommands } from '../../renderer/svg-from-commands';
-import type { CommandsItem } from '../../types/deck';
+import type { CommandsItem } from 'svg-to-deck-converter';
 
 function SvgNodeView({ node }: NodeViewProps) {
   const { width, height, viewBox, commands } = node.attrs as {

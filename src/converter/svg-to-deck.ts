@@ -1,7 +1,7 @@
-import { parseViewBox } from './transform-utils';
-import { extractTextDeckNodes } from './text-extractor';
-import { svgElementToCommands } from './svg-to-commands';
-import type { ConvertOptions, ConvertResult, DeckDocument, DeckNode, SvgNode } from '../types/deck';
+import { parseViewBox } from './transform-utils.js';
+import { extractTextDeckNodes } from './text-extractor.js';
+import { svgElementToCommands } from './svg-to-commands.js';
+import type { ConvertOptions, ConvertResult, DeckDocument, DeckNode, SvgNode } from '../types/deck.js';
 
 const DEFAULT_OPTIONS: Required<ConvertOptions> = {
   offsetTop: 0,

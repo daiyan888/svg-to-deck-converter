@@ -1,6 +1,6 @@
-export { convertSvgToDeck, extractSvgFromHtml } from './svg-to-deck';
-export { svgElementToCommands } from './svg-to-commands';
-export { extractTextBlocks, extractTextDeckNodes } from './text-extractor';
+export { convertSvgToDeck, extractSvgFromHtml } from './svg-to-deck.js';
+export { svgElementToCommands } from './svg-to-commands.js';
+export { extractTextBlocks, extractTextDeckNodes } from './text-extractor.js';
 export type {
   CommandsItem,
   ConvertOptions,
@@ -15,4 +15,4 @@ export type {
   TextGradientColorMark,
   TextMark,
   TextStyleMark,
-} from '../types/deck';
+} from '../types/deck.js';

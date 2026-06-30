@@ -1,6 +1,6 @@
 import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useMemo } from 'react';
-import type { DeckDocument } from '../types/deck';
+import type { DeckDocument } from 'svg-to-deck-converter';
 import { deckExtensions } from './extensions';
 import { toTiptapDoc } from './to-tiptap-doc';
 import styles from './deck-editor.module.css';

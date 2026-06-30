@@ -1,39 +1,52 @@
 {
   "name": "svg-to-deck-converter",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Render AntV Infographic Gallery templates with custom data and convert to TipTap deck JSON",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:lib": "vite build --config vite.lib.config.ts",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./lib/svg-to-deck.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "files": [
-    "lib"
+    "dist"
   ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.lib.json",
+    "lint": "oxlint"
+  },
+  "keywords": [
+    "svg",
+    "tiptap",
+    "deck",
+    "infographic",
+    "antv",
+    "converter"
+  ],
+  "license": "MIT",
   "dependencies": {
-    "@antv/infographic": "^0.2.19",
+    "@antv/infographic": "^0.2.19"
+  },
+  "devDependencies": {
     "@tiptap/core": "^3.27.1",
     "@tiptap/extension-document": "^3.27.1",
     "@tiptap/extension-paragraph": "^3.27.1",
     "@tiptap/extension-text": "^3.27.1",
     "@tiptap/pm": "^3.27.1",
     "@tiptap/react": "^3.27.1",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
-  },
-  "devDependencies": {
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "happy-dom": "^20.10.6",
     "oxlint": "^1.69.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "~6.0.2",
     "vite": "^8.1.0"
   }

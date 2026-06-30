@@ -1,6 +1,6 @@
-import { collectElementProps } from './attribute-utils';
-import { isSkippableRoot, isTextElement, resolveComp } from './svg-tags';
-import type { CommandsItem } from '../types/deck';
+import { collectElementProps } from './attribute-utils.js';
+import { isSkippableRoot, isTextElement, resolveComp } from './svg-tags.js';
+import type { CommandsItem } from '../types/deck.js';
 
 export interface CommandConvertContext {
   skippedNodes: string[];

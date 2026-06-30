@@ -1,63 +1,108 @@
-# SVG → TipTap Deck 转换器
+# svg-to-deck-converter
 
-将 [AntV Infographic Gallery](https://infographic.antv.vision/gallery) 等来源的 SVG 图表，转换为 TipTap `deck` 节点 JSON 结构。
+将 [AntV Infographic Gallery](https://infographic.antv.vision/gallery) 模板与自定义数据渲染为 SVG，并转换为 TipTap `deck` 节点 JSON。
 
-## 目标 JSON 结构
-
-```
-deck
-└── deckNode (width, height, top, left)
-    ├── svg (width, height, commands[])
-    │   └── commandsItem { comp, props, children? }
-    └── multiBlockContain
-        └── paragraph
-            └── text + textStyle mark (fontFamily, fontSize)
-```
-
-### comp 白名单
-
-`g` / `animate` / `ellipse` / `circle` / `polygon` / `rect` / `path` / `linearGradient` / `stop`
-
-- 有子元素但不在白名单 → `g`
-- 叶子节点但不在白名单 → `path`
-
-另扩展支持：`defs`、`clipPath`、`line`、`polyline`、`radialGradient` 等。
-
-## 使用方式
+## 安装
 
 ```bash
-cd D:\code\work\svg-to-deck-converter
+npm install svg-to-deck-converter @antv/infographic
+```
+
+## 主 API
+
+```ts
+import { convertInfographicToDeck } from 'svg-to-deck-converter';
+
+const { svg, document, stats } = await convertInfographicToDeck({
+  category: 'chart-bar',
+  template: 'chart-bar-plain-text',
+  data: {
+    title: '年度营收增长',
+    desc: '展示近三年及本年目标营收对比（单位：亿元）',
+    values: [
+      { label: '2021年', value: 120, desc: '转型初期', icon: 'lucide/sprout' },
+      { label: '2022年', value: 150, desc: '平台优化', icon: 'lucide/zap' },
+      { label: '2023年', value: 190, desc: '全面增长', icon: 'lucide/brain-circuit' },
+      { label: '2024年', value: 240, desc: '冲击新高', icon: 'lucide/trophy' },
+    ],
+  },
+  convertOptions: {
+    extractText: true,
+  },
+});
+```
+
+### 参数说明
+
+| 字段 | 说明 |
+|------|------|
+| `category` | Gallery 类型 ID，如 `chart-bar` |
+| `template` | 模板示例名（slug），如 `chart-bar-plain-text` |
+| `data` | Infographic 图表数据 |
+| `theme` | 可选，主题名称 |
+| `useGalleryDefaults` | 默认 `true`，从 Gallery 拉取示例的 theme / design 默认值 |
+| `convertOptions` | SVG → deck 转换选项 |
+
+### 返回值
+
+| 字段 | 说明 |
+|------|------|
+| `svg` | SDK 渲染出的 SVG 字符串 |
+| `document` | TipTap deck JSON |
+| `stats` | 转换统计（commands 数、text 节点数等） |
+
+## 其他 API
+
+```ts
+// 从完整 Syntax 字符串转换（与 Gallery 编辑器语法相同）
+import { convertInfographicFromSyntax } from 'svg-to-deck-converter';
+
+// 仅转换已有 SVG
+import { convertSvgToDeck } from 'svg-to-deck-converter';
+
+// 获取 Gallery 分类与模板列表
+import { getGalleryCategories } from 'svg-to-deck-converter';
+```
+
+## 本地开发（测试页面）
+
+```bash
 npm install
 npm run dev
 ```
 
-1. 打开 [AntV Infographic Gallery](https://infographic.antv.vision/gallery) 任意图表示例
-2. 在浏览器开发者工具中选中渲染出的 `<svg>` 元素，复制 outerHTML
-3. 粘贴到左侧输入框，点击「转换」
-4. 右侧获得 deck JSON，底部可预览重新渲染效果
+`dev/` 目录是本地调试用的 React 页面，可交互测试模板选择、Syntax 编辑、SDK 预览与 TipTap 渲染。
 
-## 编程式调用
+## 构建 npm 包
 
-```ts
-import { convertSvgToDeck } from './converter/svg-to-deck';
-
-const { document, stats } = convertSvgToDeck(svgString, {
-  extractText: true,       // 将 <text> 提取为 multiBlockContain
-  defaultFontSize: 14,
-  defaultFontFamily: 'sans-serif',
-});
+```bash
+npm run build
 ```
+
+使用 `tsc` 将 `src/` 编译为 `dist/`（`.js` + `.d.ts`）。
 
 ## 项目结构
 
 ```
-src/
-├── types/deck.ts              # TipTap 节点类型
-├── converter/
-│   ├── svg-to-deck.ts         # 主入口
-│   ├── svg-to-commands.ts     # SVG 元素 → commands
-│   ├── text-extractor.ts      # <text> → multiBlockContain
-│   └── attribute-utils.ts     # 属性解析
-├── renderer/                  # JSON 预览渲染
-└── components/converter-panel.tsx
+src/                  # npm 包源码
+├── index.ts          # 导出入口
+├── convert-infographic-to-deck.ts
+├── converter/        # SVG → deck JSON
+├── gallery/          # Gallery 模板与渲染
+└── types/
+
+dev/                  # 本地开发测试页面
+├── components/
+├── tiptap/
+└── renderer/
+```
+
+## deck JSON 结构
+
+```
+deck
+└── deckNode (width, height, top, left)
+    ├── svg (commands[])
+    └── multiBlockContain
+        └── paragraph → text + textStyle
 ```

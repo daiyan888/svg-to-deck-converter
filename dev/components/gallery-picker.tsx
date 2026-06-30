@@ -1,32 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   GALLERY_TEMPLATE_COUNT,
+  fetchGallerySyntax,
   getGalleryCategories,
-  getGalleryTemplateUrl,
-} from '../gallery/categories';
-import { fetchGallerySyntax } from '../gallery/fetch-gallery-syntax';
-import { renderGallerySvgFromSyntax } from '../gallery/render-gallery-svg';
+  renderGallerySvgFromSyntax,
+} from 'svg-to-deck-converter';
 import styles from './gallery-picker.module.css';
 
 export interface GallerySelection {
   categoryId: string;
   slug: string;
-  galleryUrl: string;
+}
+
+export interface GalleryTemplatePayload {
+  svg: string;
+  syntax: string;
+  selection: GallerySelection;
 }
 
 interface GalleryPickerProps {
-  onSvgLoaded: (svg: string, selection: GallerySelection) => void;
-  onGalleryUrlChange: (url: string) => void;
+  onTemplateLoaded: (payload: GalleryTemplatePayload) => void;
   onError: (message: string | null) => void;
 }
 
 const categories = getGalleryCategories();
 
-export function GalleryPicker({
-  onSvgLoaded,
-  onGalleryUrlChange,
-  onError,
-}: GalleryPickerProps) {
+export function GalleryPicker({ onTemplateLoaded, onError }: GalleryPickerProps) {
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [slug, setSlug] = useState(categories[0]?.templates[0] ?? '');
   const [loading, setLoading] = useState(false);
@@ -44,18 +43,19 @@ export function GalleryPicker({
         return;
       }
 
-      const galleryUrl = getGalleryTemplateUrl(nextSlug);
-      onGalleryUrlChange(galleryUrl);
       setLoading(true);
       onError(null);
 
       try {
         const syntax = await fetchGallerySyntax(nextSlug);
         const svg = await renderGallerySvgFromSyntax(syntax);
-        onSvgLoaded(svg, {
-          categoryId: nextCategoryId,
-          slug: nextSlug,
-          galleryUrl,
+        onTemplateLoaded({
+          svg,
+          syntax,
+          selection: {
+            categoryId: nextCategoryId,
+            slug: nextSlug,
+          },
         });
       } catch (error) {
         onError(error instanceof Error ? error.message : String(error));
@@ -63,7 +63,7 @@ export function GalleryPicker({
         setLoading(false);
       }
     },
-    [onError, onGalleryUrlChange, onSvgLoaded],
+    [onError, onTemplateLoaded],
   );
 
   const handleCategoryChange = useCallback(
@@ -129,7 +129,7 @@ export function GalleryPicker({
 
       <p className={styles.meta}>
         共 {categories.length} 种类型 / {GALLERY_TEMPLATE_COUNT} 个官方示例
-        {loading ? ' · 正在提取 SVG…' : ''}
+        {loading ? ' · 正在加载模板…' : ''}
       </p>
     </div>
   );

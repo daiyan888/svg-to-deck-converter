@@ -1,12 +1,12 @@
-import { collectElementProps, parseFontSize } from './attribute-utils';
-import { parseTextColor } from './color-utils';
+import { collectElementProps, parseFontSize } from './attribute-utils.js';
+import { parseTextColor } from './color-utils.js';
 import {
   getAbsoluteAnchor,
   parseStyleValue,
   type ViewBoxInfo,
-} from './transform-utils';
-import { isTextElement } from './svg-tags';
-import type { MultiBlockContainNode, TextGradientColorMark, TextMark, TextNode } from '../types/deck';
+} from './transform-utils.js';
+import { isTextElement } from './svg-tags.js';
+import type { MultiBlockContainNode, TextGradientColorMark, TextMark, TextNode } from '../types/deck.js';
 
 export interface TextExtractContext {
   textNodeCount: number;

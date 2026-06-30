@@ -1,4 +1,4 @@
-import { parseStyleValue } from './transform-utils';
+import { parseStyleValue } from './transform-utils.js';
 
 export interface ParsedTextColor {
   color?: string;

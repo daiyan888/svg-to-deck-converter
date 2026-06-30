@@ -1,4 +1,4 @@
-import type { CommandsItem } from '../types/deck';
+import type { CommandsItem } from 'svg-to-deck-converter';
 
 const VOID_ELEMENTS = new Set([
   'path',

@@ -1,0 +1,130 @@
+import type { Data, InfographicOptions, SyntaxError, ThemeConfig } from '@antv/infographic';
+import { getTemplates, parseSyntax } from '@antv/infographic';
+import { convertSvgToDeck } from './converter/svg-to-deck.js';
+import { getCategoryId } from './gallery/categories.js';
+import { fetchGallerySyntax } from './gallery/fetch-gallery-syntax.js';
+import { renderInfographicSvg } from './gallery/render-gallery-svg.js';
+import { renderAndConvertFromSyntax } from './gallery/pipeline.js';
+import type { ConvertOptions, ConvertResult, DeckDocument } from './types/deck.js';
+
+export interface ConvertInfographicInput {
+  /** Gallery 类型 ID，如 chart-bar */
+  category: string;
+  /** 模板示例名（slug），如 chart-bar-plain-text */
+  template: string;
+  /** 图表数据 */
+  data: Data;
+  /** 主题名称，默认从 Gallery 示例继承，否则为 light */
+  theme?: string;
+  /** 额外主题配置 */
+  themeConfig?: ThemeConfig;
+  /** 是否从 Gallery 拉取示例默认 theme / design，默认 true */
+  useGalleryDefaults?: boolean;
+  /** SVG → deck 转换选项 */
+  convertOptions?: ConvertOptions;
+  /** 渲染宽度 */
+  width?: number;
+  /** 渲染高度 */
+  height?: number;
+}
+
+export interface ConvertInfographicResult {
+  svg: string;
+  document: DeckDocument;
+  stats: ConvertResult['stats'];
+  warnings: SyntaxError[];
+}
+
+export interface ConvertInfographicFromSyntaxInput {
+  syntax: string;
+  convertOptions?: ConvertOptions;
+}
+
+function assertTemplateInCategory(category: string, template: string): void {
+  if (!getTemplates().includes(template)) {
+    throw new Error(`未知模板: ${template}`);
+  }
+
+  const actualCategory = getCategoryId(template);
+  if (actualCategory !== category) {
+    throw new Error(
+      `模板 "${template}" 不属于类型 "${category}"，实际类型为 "${actualCategory}"`,
+    );
+  }
+}
+
+async function resolveRenderOptions(
+  input: ConvertInfographicInput,
+): Promise<Partial<InfographicOptions>> {
+  const base: Partial<InfographicOptions> = {
+    template: input.template,
+    data: input.data,
+    theme: input.theme ?? 'light',
+    themeConfig: input.themeConfig,
+  };
+
+  if (input.useGalleryDefaults === false) {
+    return base;
+  }
+
+  try {
+    const syntax = await fetchGallerySyntax(input.template);
+    const parsed = parseSyntax(syntax);
+    return {
+      ...parsed.options,
+      ...base,
+      template: input.template,
+      data: input.data,
+      theme: input.theme ?? parsed.options.theme ?? base.theme,
+      themeConfig: input.themeConfig ?? parsed.options.themeConfig,
+    };
+  } catch {
+    return base;
+  }
+}
+
+/**
+ * 根据 Gallery 类型、模板示例名与数据，渲染 SVG 并转换为 TipTap deck JSON。
+ */
+export async function convertInfographicToDeck(
+  input: ConvertInfographicInput,
+): Promise<ConvertInfographicResult> {
+  assertTemplateInCategory(input.category, input.template);
+
+  const renderOptions = await resolveRenderOptions(input);
+  const svg = await renderInfographicSvg(
+    renderOptions as Parameters<typeof renderInfographicSvg>[0],
+    {
+      width: input.width ?? 960,
+      height: input.height ?? 640,
+    },
+  );
+
+  const converted = convertSvgToDeck(svg, input.convertOptions);
+
+  return {
+    svg,
+    document: converted.document,
+    stats: converted.stats,
+    warnings: [],
+  };
+}
+
+/**
+ * 根据完整 Infographic Syntax 字符串渲染 SVG 并转换为 TipTap deck JSON。
+ */
+export async function convertInfographicFromSyntax(
+  input: ConvertInfographicFromSyntaxInput | string,
+  convertOptions?: ConvertOptions,
+): Promise<ConvertInfographicResult> {
+  const syntax = typeof input === 'string' ? input : input.syntax;
+  const options = typeof input === 'string' ? convertOptions : input.convertOptions;
+  const pipeline = await renderAndConvertFromSyntax(syntax, options);
+
+  return {
+    svg: pipeline.svg,
+    document: pipeline.result.document,
+    stats: pipeline.result.stats,
+    warnings: pipeline.warnings,
+  };
+}

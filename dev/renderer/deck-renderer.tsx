@@ -1,4 +1,4 @@
-import type { DeckDocument, DeckNode, DeckNodeChild } from '../types/deck';
+import type { DeckDocument, DeckNode, DeckNodeChild } from 'svg-to-deck-converter';
 import { MultiBlockContainRenderer } from './multi-block-contain-renderer';
 import { SvgFromCommands } from './svg-from-commands';
 import styles from './deck-renderer.module.css';

@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties } from 'react';
-import type { CommandsItem } from '../types/deck';
+import type { CommandsItem } from 'svg-to-deck-converter';
 import { commandsToInnerMarkup } from './commands-to-markup';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';

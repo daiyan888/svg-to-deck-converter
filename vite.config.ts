@@ -1,9 +1,16 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
+  root: resolve(__dirname, 'dev'),
+  publicDir: resolve(__dirname, 'public'),
   plugins: [react()],
+  resolve: {
+    alias: {
+      'svg-to-deck-converter': resolve(__dirname, 'src/index.ts'),
+    },
+  },
   server: {
     proxy: {
       '/antv-proxy': {
@@ -13,4 +20,4 @@ export default defineConfig({
       },
     },
   },
-})
+});
