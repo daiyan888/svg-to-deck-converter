@@ -1,7 +1,16 @@
 import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
-import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
+import {
+  NodeViewContent,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type NodeViewProps,
+} from '@tiptap/react';
 
-function MultiBlockContainerNodeView() {
+const DEFAULT_PADDING = '0px 0px 0px 0px';
+
+function MultiBlockContainerNodeView({ node }: NodeViewProps) {
+  const { padding } = node.attrs as { padding: string };
+
   return (
     <NodeViewWrapper
       as="div"
@@ -9,6 +18,7 @@ function MultiBlockContainerNodeView() {
         width: '100%',
         height: '100%',
         margin: 0,
+        padding,
         whiteSpace: 'pre-wrap',
         pointerEvents: 'none',
       }}
@@ -24,16 +34,23 @@ export const MultiBlockContainer = Node.create({
   content: 'paragraph+',
   defining: true,
 
+  addAttributes() {
+    return {
+      padding: { default: DEFAULT_PADDING },
+    };
+  },
+
   parseHTML() {
     return [{ tag: 'div[data-multi-block-container]' }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
+    const { padding } = node.attrs;
     return [
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-multi-block-container': '',
-        style: 'white-space:pre-wrap;',
+        style: `white-space:pre-wrap;padding:${padding};`,
       }),
       0,
     ];

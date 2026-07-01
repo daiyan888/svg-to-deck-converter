@@ -44,8 +44,10 @@ interface MultiBlockContainerRendererProps {
 }
 
 export function MultiBlockContainerRenderer({ node }: MultiBlockContainerRendererProps) {
+  const padding = node.attrs.padding;
+
   return (
-    <div className={styles.multiBlockContainer}>
+    <div className={styles.multiBlockContainer} style={{ padding }}>
       {node.content.map((p, i) => renderParagraph(p, i))}
     </div>
   );

@@ -32,8 +32,13 @@ export interface ParagraphNode {
   content: TextNode[];
 }
 
+export const DEFAULT_MULTI_BLOCK_CONTAINER_PADDING = '0px 0px 0px 0px';
+
 export interface MultiBlockContainerNode {
   type: 'multiBlockContainer';
+  attrs: {
+    padding: string;
+  };
   content: ParagraphNode[];
 }
 

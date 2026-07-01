@@ -6,7 +6,13 @@ import {
   type ViewBoxInfo,
 } from './transform-utils.js';
 import { isTextElement } from './svg-tags.js';
-import type { MultiBlockContainerNode, TextGradientColorMark, TextMark, TextNode } from '../types/deck.js';
+import {
+  DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+  type MultiBlockContainerNode,
+  type TextGradientColorMark,
+  type TextMark,
+  type TextNode,
+} from '../types/deck.js';
 
 export interface TextExtractContext {
   textNodeCount: number;
@@ -156,6 +162,9 @@ function buildMultiBlockContainer(
   };
   return {
     type: 'multiBlockContainer',
+    attrs: {
+      padding: DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+    },
     content: [
       {
         type: 'paragraph',
