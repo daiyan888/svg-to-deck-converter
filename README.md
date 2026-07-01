@@ -51,12 +51,63 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | `document` | TipTap deck JSON |
 | `stats` | 转换统计（commands 数、text 节点数等） |
 
+## 从 Syntax 转换
+
+若已有完整的 Infographic Syntax 字符串（与 [Gallery 编辑器](https://infographic.antv.vision/gallery) 或 [信息图语法](https://infographic.antv.vision/learn/infographic-syntax) 相同），可直接渲染并转换：
+
+```ts
+import { convertInfographicFromSyntax } from 'svg-to-deck-converter';
+
+const syntax = `
+infographic chart-bar-plain-text
+data
+  title 年度营收增长
+  desc 展示近三年及本年目标营收对比（单位：亿元）
+  values
+    - label 2021年
+      value 120
+      desc 转型初期
+      icon lucide/sprout
+    - label 2022年
+      value 150
+      desc 平台优化
+      icon lucide/zap
+    - label 2023年
+      value 190
+      desc 全面增长
+      icon lucide/brain-circuit
+    - label 2024年
+      value 240
+      desc 冲击新高
+      icon lucide/trophy
+theme light
+`.trim();
+
+const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
+  syntax,
+  convertOptions: {
+    extractText: true,
+  },
+});
+
+// 也支持直接传入 syntax 字符串
+// await convertInfographicFromSyntax(syntax, { extractText: true });
+```
+
+### 参数说明
+
+| 字段 | 说明 |
+|------|------|
+| `syntax` | 完整 Infographic Syntax 字符串 |
+| `convertOptions` | SVG → deck 转换选项 |
+
+### 返回值
+
+与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告，无问题时为空数组）。
+
 ## 其他 API
 
 ```ts
-// 从完整 Syntax 字符串转换（与 Gallery 编辑器语法相同）
-import { convertInfographicFromSyntax } from 'svg-to-deck-converter';
-
 // 仅转换已有 SVG
 import { convertSvgToDeck } from 'svg-to-deck-converter';
 
