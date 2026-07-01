@@ -5,7 +5,7 @@ import { DeckDocument } from './deck-document';
 import { DeckNode } from './deck-node';
 import { DeckTextStyle } from './deck-text-style';
 import { TextGradientColor } from './text-gradient-color';
-import { MultiBlockContain } from './multi-block-contain';
+import { MultiBlockContainer } from './multi-block-container';
 import { SvgNode } from './svg-node';
 
 const StyledParagraph = Paragraph.extend({
@@ -36,7 +36,7 @@ export const deckExtensions = [
   Deck,
   DeckNode,
   SvgNode,
-  MultiBlockContain,
+  MultiBlockContainer,
   StyledParagraph,
   Text,
   DeckTextStyle,

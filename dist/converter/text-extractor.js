@@ -92,7 +92,7 @@ function buildTextGradientColorMark(color, textGradientColor) {
         },
     };
 }
-function buildMultiBlockContain(text, fontFamily, fontSize, textAlign, color, textGradientColor) {
+function buildMultiBlockContainer(text, fontFamily, fontSize, textAlign, color, textGradientColor) {
     const marks = [
         {
             type: 'textStyle',
@@ -109,7 +109,7 @@ function buildMultiBlockContain(text, fontFamily, fontSize, textAlign, color, te
         marks,
     };
     return {
-        type: 'multiBlockContain',
+        type: 'multiBlockContainer',
         content: [
             {
                 type: 'paragraph',
@@ -151,7 +151,7 @@ function textElementToCandidate(el, defaultFontFamily, defaultFontSize, viewBox,
         top,
         width,
         height,
-        multiBlockContain: buildMultiBlockContain(content, fontFamily, fontSize, undefined, color, textGradientColor),
+        multiBlockContainer: buildMultiBlockContainer(content, fontFamily, fontSize, undefined, color, textGradientColor),
     };
 }
 function foreignObjectToCandidate(el, defaultFontFamily, defaultFontSize, viewBox, svgRoot) {
@@ -174,7 +174,7 @@ function foreignObjectToCandidate(el, defaultFontFamily, defaultFontSize, viewBo
         top,
         width,
         height,
-        multiBlockContain: buildMultiBlockContain(content, fontFamily, fontSize, textAlign, color, textGradientColor),
+        multiBlockContainer: buildMultiBlockContainer(content, fontFamily, fontSize, textAlign, color, textGradientColor),
     };
 }
 function walkTextElements(el, candidates, defaultFontFamily, defaultFontSize, viewBox, svgRoot, ctx) {
@@ -213,5 +213,5 @@ export function extractTextBlocks(svgRoot, defaultFontFamily, defaultFontSize, c
         height: 600,
         viewBox: '0 0 800 600',
     };
-    return extractTextDeckNodes(svgRoot, viewBox, defaultFontFamily, defaultFontSize, ctx).map((c) => c.multiBlockContain);
+    return extractTextDeckNodes(svgRoot, viewBox, defaultFontFamily, defaultFontSize, ctx).map((c) => c.multiBlockContainer);
 }

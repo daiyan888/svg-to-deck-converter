@@ -6,7 +6,7 @@ import {
   type ViewBoxInfo,
 } from './transform-utils.js';
 import { isTextElement } from './svg-tags.js';
-import type { MultiBlockContainNode, TextGradientColorMark, TextMark, TextNode } from '../types/deck.js';
+import type { MultiBlockContainerNode, TextGradientColorMark, TextMark, TextNode } from '../types/deck.js';
 
 export interface TextExtractContext {
   textNodeCount: number;
@@ -17,7 +17,7 @@ export interface TextDeckNodeCandidate {
   top: number;
   width: number;
   height: number;
-  multiBlockContain: MultiBlockContainNode;
+  multiBlockContainer: MultiBlockContainerNode;
 }
 
 function getDirectText(el: Element): string {
@@ -131,14 +131,14 @@ function buildTextGradientColorMark(
   };
 }
 
-function buildMultiBlockContain(
+function buildMultiBlockContainer(
   text: string,
   fontFamily: string,
   fontSize: number,
   textAlign?: 'left' | 'center' | 'right',
   color?: string,
   textGradientColor?: string,
-): MultiBlockContainNode {
+): MultiBlockContainerNode {
   const marks: TextMark[] = [
     {
       type: 'textStyle',
@@ -155,7 +155,7 @@ function buildMultiBlockContain(
     marks,
   };
   return {
-    type: 'multiBlockContain',
+    type: 'multiBlockContainer',
     content: [
       {
         type: 'paragraph',
@@ -219,7 +219,7 @@ function textElementToCandidate(
     top,
     width,
     height,
-    multiBlockContain: buildMultiBlockContain(
+    multiBlockContainer: buildMultiBlockContainer(
       content,
       fontFamily,
       fontSize,
@@ -260,7 +260,7 @@ function foreignObjectToCandidate(
     top,
     width,
     height,
-    multiBlockContain: buildMultiBlockContain(
+    multiBlockContainer: buildMultiBlockContainer(
       content,
       fontFamily,
       fontSize,
@@ -335,7 +335,7 @@ export function extractTextBlocks(
   defaultFontFamily: string,
   defaultFontSize: number,
   ctx: TextExtractContext,
-): MultiBlockContainNode[] {
+): MultiBlockContainerNode[] {
   const viewBox = {
     minX: 0,
     minY: 0,
@@ -344,6 +344,6 @@ export function extractTextBlocks(
     viewBox: '0 0 800 600',
   };
   return extractTextDeckNodes(svgRoot, viewBox, defaultFontFamily, defaultFontSize, ctx).map(
-    (c) => c.multiBlockContain,
+    (c) => c.multiBlockContainer,
   );
 }

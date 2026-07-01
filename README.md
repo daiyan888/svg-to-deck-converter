@@ -103,6 +103,6 @@ dev/                  # 本地开发测试页面
 deck
 └── deckNode (width, height, top, left)
     ├── svg (commands[])
-    └── multiBlockContain
+    └── multiBlockContainer
         └── paragraph → text + textStyle
 ```

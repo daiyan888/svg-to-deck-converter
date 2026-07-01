@@ -26,14 +26,16 @@ export interface ParagraphNode {
     };
     content: TextNode[];
 }
-export interface MultiBlockContainNode {
-    type: 'multiBlockContain';
+export interface MultiBlockContainerNode {
+    type: 'multiBlockContainer';
     content: ParagraphNode[];
 }
+export type CommandAttributeValue = string | number | boolean;
+/** SVG 绘制指令，图形属性与 comp 同级展开 */
 export interface CommandsItem {
     comp: string;
-    props: Record<string, string | number | boolean>;
     children?: CommandsItem[];
+    [attr: string]: CommandAttributeValue | CommandsItem[] | undefined;
 }
 export interface SvgNode {
     type: 'svg';
@@ -44,7 +46,7 @@ export interface SvgNode {
         commands: CommandsItem[];
     };
 }
-export type DeckNodeChild = SvgNode | MultiBlockContainNode;
+export type DeckNodeChild = SvgNode | MultiBlockContainerNode;
 export interface DeckNode {
     type: 'deckNode';
     attrs: {
@@ -53,7 +55,7 @@ export interface DeckNode {
         top: number;
         left: number;
     };
-    /** 每个 deckNode 只能有一个子节点（svg 或 multiBlockContain） */
+    /** 每个 deckNode 只能有一个子节点（svg 或 multiBlockContainer） */
     content: [DeckNodeChild];
 }
 export interface DeckDocument {
@@ -64,7 +66,7 @@ export interface ConvertOptions {
     /** deckNode 在 deck 内的偏移，默认 0 */
     offsetTop?: number;
     offsetLeft?: number;
-    /** 是否将 SVG <text>/<tspan> 提取为 multiBlockContain，默认 true */
+    /** 是否将 SVG <text>/<tspan> 提取为 multiBlockContainer，默认 true */
     extractText?: boolean;
     /** 默认字号（无法从 SVG 解析时） */
     defaultFontSize?: number;

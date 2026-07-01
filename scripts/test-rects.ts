@@ -1,6 +1,7 @@
 import { Window } from 'happy-dom';
 import { convertSvgToDeck } from '../src/converter/svg-to-deck.ts';
-import { SAMPLE_SVG } from '../src/samples/default-svg.ts';
+import type { CommandsItem } from '../src/types/deck.ts';
+import { SAMPLE_SVG } from '../dev/samples/default-svg.ts';
 
 const window = new Window();
 (globalThis as typeof globalThis & { window: Window }).window = window as unknown as Window;
@@ -29,12 +30,13 @@ console.log('paths', count(svgNode.attrs.commands, 'path'));
 console.log('gs', count(svgNode.attrs.commands, 'g'));
 
 const rects: Record<string, unknown>[] = [];
-function collectRects(
-  items: { comp: string; props: Record<string, unknown>; children?: unknown[] }[],
-) {
+function collectRects(items: CommandsItem[]) {
   for (const item of items) {
-    if (item.comp === 'rect') rects.push(item.props);
-    if (item.children) collectRects(item.children as typeof items);
+    if (item.comp === 'rect') {
+      const { comp: _comp, children: _children, ...attrs } = item;
+      rects.push(attrs);
+    }
+    if (item.children) collectRects(item.children);
   }
 }
 collectRects(svgNode.attrs.commands);

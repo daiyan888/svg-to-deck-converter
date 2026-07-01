@@ -1,4 +1,4 @@
-import type { MultiBlockContainNode, ParagraphNode, TextNode } from 'svg-to-deck-converter';
+import type { MultiBlockContainerNode, ParagraphNode, TextNode } from 'svg-to-deck-converter';
 import { buildTextColorCss } from '../tiptap/text-color-style';
 import styles from './deck-renderer.module.css';
 
@@ -39,13 +39,13 @@ function renderParagraph(p: ParagraphNode, key: number) {
   );
 }
 
-interface MultiBlockContainRendererProps {
-  node: MultiBlockContainNode;
+interface MultiBlockContainerRendererProps {
+  node: MultiBlockContainerNode;
 }
 
-export function MultiBlockContainRenderer({ node }: MultiBlockContainRendererProps) {
+export function MultiBlockContainerRenderer({ node }: MultiBlockContainerRendererProps) {
   return (
-    <div className={styles.multiBlockContain}>
+    <div className={styles.multiBlockContainer}>
       {node.content.map((p, i) => renderParagraph(p, i))}
     </div>
   );

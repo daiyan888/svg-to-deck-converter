@@ -22,7 +22,7 @@ export type {
   DeckDocument,
   DeckNode,
   DeckNodeChild,
-  MultiBlockContainNode,
+  MultiBlockContainerNode,
   ParagraphNode,
   SvgNode,
   TextNode,

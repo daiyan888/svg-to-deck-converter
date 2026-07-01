@@ -30,7 +30,7 @@ function DeckNodeNodeView({ node }: NodeViewProps) {
 export const DeckNode = Node.create({
   name: 'deckNode',
   group: 'block',
-  content: '(svg|multiBlockContain)',
+  content: '(svg|multiBlockContainer)',
   defining: true,
 
   addAttributes() {

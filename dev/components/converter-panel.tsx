@@ -141,7 +141,7 @@ export function ConverterPanel() {
             checked={extractText}
             onChange={(e) => setExtractText(e.target.checked)}
           />
-          提取 &lt;text&gt; 为 multiBlockContain
+          提取 &lt;text&gt; 为 multiBlockContainer
         </label>
         <button
           type="button"

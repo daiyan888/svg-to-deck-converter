@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 
-function MultiBlockContainNodeView() {
+function MultiBlockContainerNodeView() {
   return (
     <NodeViewWrapper
       as="div"
@@ -18,21 +18,21 @@ function MultiBlockContainNodeView() {
   );
 }
 
-export const MultiBlockContain = Node.create({
-  name: 'multiBlockContain',
+export const MultiBlockContainer = Node.create({
+  name: 'multiBlockContainer',
   group: 'block',
   content: 'paragraph+',
   defining: true,
 
   parseHTML() {
-    return [{ tag: 'div[data-multi-block-contain]' }];
+    return [{ tag: 'div[data-multi-block-container]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
       'div',
       mergeAttributes(HTMLAttributes, {
-        'data-multi-block-contain': '',
+        'data-multi-block-container': '',
         style: 'white-space:pre-wrap;',
       }),
       0,
@@ -40,6 +40,6 @@ export const MultiBlockContain = Node.create({
   },
 
   addNodeView(): NodeViewRenderer {
-    return ReactNodeViewRenderer(MultiBlockContainNodeView);
+    return ReactNodeViewRenderer(MultiBlockContainerNodeView);
   },
 });

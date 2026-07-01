@@ -67,7 +67,7 @@ export function convertSvgToDeck(svgString, options = {}) {
                     top: item.top,
                     left: item.left,
                 },
-                content: [item.multiBlockContain],
+                content: [item.multiBlockContainer],
             });
         }
     }

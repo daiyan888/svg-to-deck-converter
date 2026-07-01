@@ -44,7 +44,7 @@ function elementToCommand(el: Element, ctx: CommandConvertContext): CommandsItem
 
   return {
     comp,
-    props,
+    ...props,
     ...(children.length > 0 ? { children } : {}),
   };
 }

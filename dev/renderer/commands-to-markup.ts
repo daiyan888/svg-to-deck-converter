@@ -52,16 +52,29 @@ function toKebabCase(name: string): string {
   return name;
 }
 
-function propsToAttrString(props: Record<string, string | number | boolean>): string {
-  return Object.entries(props)
+function attrsToString(attrs: Record<string, string | number | boolean>): string {
+  return Object.entries(attrs)
     .filter(([key]) => key !== 'key')
     .map(([key, value]) => `${toKebabCase(key)}="${escapeAttr(String(value))}"`)
     .join(' ');
 }
 
+function commandAttrs(item: CommandsItem): Record<string, string | number | boolean> {
+  const attrs: Record<string, string | number | boolean> = {};
+  for (const [key, value] of Object.entries(item)) {
+    if (key === 'comp' || key === 'children') {
+      continue;
+    }
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      attrs[key] = value;
+    }
+  }
+  return attrs;
+}
+
 export function commandToMarkup(item: CommandsItem): string {
-  const { comp, props, children } = item;
-  const attrs = propsToAttrString(props);
+  const { comp, children } = item;
+  const attrs = attrsToString(commandAttrs(item));
   const open = attrs ? `<${comp} ${attrs}` : `<${comp}`;
 
   if (!children?.length) {

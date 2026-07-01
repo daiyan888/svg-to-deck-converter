@@ -28,7 +28,7 @@ function elementToCommand(el, ctx) {
     ctx.commandCount += 1;
     return {
         comp,
-        props,
+        ...props,
         ...(children.length > 0 ? { children } : {}),
     };
 }

@@ -1,5 +1,5 @@
 import type { DeckDocument, DeckNode, DeckNodeChild } from 'svg-to-deck-converter';
-import { MultiBlockContainRenderer } from './multi-block-contain-renderer';
+import { MultiBlockContainerRenderer } from './multi-block-container-renderer';
 import { SvgFromCommands } from './svg-from-commands';
 import styles from './deck-renderer.module.css';
 
@@ -15,7 +15,7 @@ function renderDeckNodeChild(child: DeckNodeChild) {
       />
     );
   }
-  return <MultiBlockContainRenderer node={child} />;
+  return <MultiBlockContainerRenderer node={child} />;
 }
 
 function renderDeckNode(node: DeckNode, key: number) {

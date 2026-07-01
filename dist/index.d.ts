@@ -1,7 +1,7 @@
 export { convertInfographicFromSyntax, convertInfographicToDeck, } from './convert-infographic-to-deck.js';
 export type { ConvertInfographicFromSyntaxInput, ConvertInfographicInput, ConvertInfographicResult, } from './convert-infographic-to-deck.js';
 export { convertSvgToDeck, extractSvgFromHtml, svgElementToCommands, extractTextBlocks, extractTextDeckNodes, } from './converter/index.js';
-export type { CommandsItem, ConvertOptions, ConvertResult, DeckDocument, DeckNode, DeckNodeChild, MultiBlockContainNode, ParagraphNode, SvgNode, TextNode, TextGradientColorMark, TextMark, TextStyleMark, } from './types/deck.js';
+export type { CommandsItem, ConvertOptions, ConvertResult, DeckDocument, DeckNode, DeckNodeChild, MultiBlockContainerNode, ParagraphNode, SvgNode, TextNode, TextGradientColorMark, TextMark, TextStyleMark, } from './types/deck.js';
 export { GALLERY_TEMPLATE_COUNT, getCategoryId, getCategoryLabel, getGalleryCategories, getGalleryTemplateUrl, } from './gallery/categories.js';
 export type { GalleryCategory } from './gallery/categories.js';
 export type { Data, ItemDatum } from '@antv/infographic';
