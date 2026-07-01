@@ -39,12 +39,26 @@ export function ConverterPanel() {
     return JSON.stringify(result.document, null, 2);
   }, [result]);
 
+  const compressedJsonOutput = useMemo(() => {
+    if (!result) {
+      return '';
+    }
+    return JSON.stringify(result.document);
+  }, [result]);
+
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
       return;
     }
     await navigator.clipboard.writeText(jsonOutput);
   }, [jsonOutput]);
+
+  const handleCopyCompressedJson = useCallback(async () => {
+    if (!compressedJsonOutput) {
+      return;
+    }
+    await navigator.clipboard.writeText(compressedJsonOutput);
+  }, [compressedJsonOutput]);
 
   const handleLoadSample = useCallback(async () => {
     setError(null);
@@ -183,9 +197,18 @@ export function ConverterPanel() {
           <div className={styles.panelHeader}>
             <h2 className={styles.panelTitle}>JSON 输出</h2>
             {result && (
-              <button type="button" className={styles.btnSmall} onClick={handleCopyJson}>
-                复制 JSON
-              </button>
+              <div className={styles.panelActions}>
+                <button type="button" className={styles.btnSmall} onClick={() => void handleCopyJson()}>
+                  复制 JSON
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnSmall}
+                  onClick={() => void handleCopyCompressedJson()}
+                >
+                  复制压缩 JSON
+                </button>
+              </div>
             )}
           </div>
           {error && <div className={styles.error}>{error}</div>}
