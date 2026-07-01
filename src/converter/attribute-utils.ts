@@ -138,6 +138,10 @@ export function parseSvgLength(value: string | null | undefined, fallback: numbe
   return num;
 }
 
+export function formatFontSizePx(value: number): string {
+  return `${value}px`;
+}
+
 export function parseFontSize(value: string | number | undefined, fallback: number): number {
   if (typeof value === 'number') {
     return value;

@@ -4,7 +4,7 @@ export interface TextStyleMark {
   type: 'textStyle';
   attrs: {
     fontFamily: string;
-    fontSize: number;
+    fontSize: string;
   };
 }
 

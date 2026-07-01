@@ -11,11 +11,8 @@ export const DeckTextStyle = Mark.create({
         renderHTML: (attributes) => ({ fontFamily: attributes.fontFamily }),
       },
       fontSize: {
-        default: 14,
-        parseHTML: (element) => {
-          const size = element.style.fontSize;
-          return size ? parseFloat(size) : 14;
-        },
+        default: '14px',
+        parseHTML: (element) => element.style.fontSize || '14px',
         renderHTML: (attributes) => ({ fontSize: attributes.fontSize }),
       },
     };
@@ -31,7 +28,7 @@ export const DeckTextStyle = Mark.create({
       'span',
       mergeAttributes(HTMLAttributes, {
         'data-text-style': '',
-        style: `font-family:${fontFamily};font-size:${fontSize}px;`,
+        style: `font-family:${fontFamily};font-size:${fontSize};`,
       }),
       0,
     ];

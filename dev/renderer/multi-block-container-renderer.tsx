@@ -9,7 +9,7 @@ function renderTextNode(node: TextNode, key: number) {
     ...(textStyleMark
       ? {
           fontFamily: textStyleMark.attrs.fontFamily,
-          fontSize: `${textStyleMark.attrs.fontSize}px`,
+          fontSize: textStyleMark.attrs.fontSize,
         }
       : {}),
     ...(colorMark

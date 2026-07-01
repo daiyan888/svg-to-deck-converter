@@ -1,4 +1,4 @@
-import { collectElementProps, parseFontSize } from './attribute-utils.js';
+import { collectElementProps, formatFontSizePx, parseFontSize } from './attribute-utils.js';
 import { parseTextColor } from './color-utils.js';
 import {
   getAbsoluteAnchor,
@@ -142,7 +142,7 @@ function buildMultiBlockContainer(
   const marks: TextMark[] = [
     {
       type: 'textStyle',
-      attrs: { fontFamily, fontSize },
+      attrs: { fontFamily, fontSize: formatFontSizePx(fontSize) },
     },
   ];
   const colorMark = buildTextGradientColorMark(color, textGradientColor);
