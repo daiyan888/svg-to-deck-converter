@@ -22,6 +22,10 @@ export interface ConvertInfographicInput {
   useGalleryDefaults?: boolean;
   /** SVG → deck 转换选项 */
   convertOptions?: ConvertOptions;
+  /** 所有 deckNode 的 top 统一偏移（优先级高于 convertOptions.offsetTop） */
+  offsetTop?: number;
+  /** 所有 deckNode 的 left 统一偏移（优先级高于 convertOptions.offsetLeft） */
+  offsetLeft?: number;
   /** 渲染宽度 */
   width?: number;
   /** 渲染高度 */
@@ -38,6 +42,22 @@ export interface ConvertInfographicResult {
 export interface ConvertInfographicFromSyntaxInput {
   syntax: string;
   convertOptions?: ConvertOptions;
+  /** 所有 deckNode 的 top 统一偏移（优先级高于 convertOptions.offsetTop） */
+  offsetTop?: number;
+  /** 所有 deckNode 的 left 统一偏移（优先级高于 convertOptions.offsetLeft） */
+  offsetLeft?: number;
+}
+
+function resolveConvertOptions(
+  convertOptions?: ConvertOptions,
+  offsetTop?: number,
+  offsetLeft?: number,
+): ConvertOptions {
+  return {
+    ...convertOptions,
+    ...(offsetTop !== undefined ? { offsetTop } : {}),
+    ...(offsetLeft !== undefined ? { offsetLeft } : {}),
+  };
 }
 
 function assertTemplateInCategory(category: string, template: string): void {
@@ -100,7 +120,10 @@ export async function convertInfographicToDeck(
     },
   );
 
-  const converted = convertSvgToDeck(svg, input.convertOptions);
+  const converted = convertSvgToDeck(
+    svg,
+    resolveConvertOptions(input.convertOptions, input.offsetTop, input.offsetLeft),
+  );
 
   return {
     svg,
@@ -118,7 +141,10 @@ export async function convertInfographicFromSyntax(
   convertOptions?: ConvertOptions,
 ): Promise<ConvertInfographicResult> {
   const syntax = typeof input === 'string' ? input : input.syntax;
-  const options = typeof input === 'string' ? convertOptions : input.convertOptions;
+  const options =
+    typeof input === 'string'
+      ? convertOptions
+      : resolveConvertOptions(input.convertOptions, input.offsetTop, input.offsetLeft);
   const pipeline = await renderAndConvertFromSyntax(syntax, options);
 
   return {

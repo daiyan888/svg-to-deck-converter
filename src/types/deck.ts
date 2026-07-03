@@ -81,7 +81,7 @@ export interface DeckDocument {
 }
 
 export interface ConvertOptions {
-  /** deckNode 在 deck 内的偏移，默认 0 */
+  /** 所有 deckNode 的 top/left 统一偏移，默认 0 */
   offsetTop?: number;
   offsetLeft?: number;
   /** 是否将 SVG <text>/<tspan> 提取为 multiBlockContainer，默认 true */

@@ -17,6 +17,13 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [extractText, setExtractText] = useState(true);
+  const [offsetTop, setOffsetTop] = useState(0);
+  const [offsetLeft, setOffsetLeft] = useState(0);
+
+  const convertOptions = useMemo(
+    () => ({ extractText, offsetTop, offsetLeft }),
+    [extractText, offsetTop, offsetLeft],
+  );
 
   const jsonOutput = useMemo(() => {
     if (!result) {
@@ -29,13 +36,13 @@ export function App() {
     try {
       setError(null);
       setRenderedSvg(svgInput);
-      const converted = convertSvgToDeck(svgInput, { extractText });
+      const converted = convertSvgToDeck(svgInput, convertOptions);
       setResult(converted);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [extractText, svgInput]);
+  }, [convertOptions, svgInput]);
 
   const handleLoadGallerySyntax = useCallback(async () => {
     setLoading(true);
@@ -58,7 +65,7 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, { extractText });
+      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions);
       setRenderedSvg(pipeline.svg);
       setSvgInput(pipeline.svg);
       setResult(pipeline.result);
@@ -68,7 +75,7 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [extractText, syntaxInput]);
+  }, [convertOptions, syntaxInput]);
 
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
@@ -87,14 +94,34 @@ export function App() {
             <code>dist/</code>（已内联 @antv/infographic，零额外运行时依赖）
           </p>
         </div>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={extractText}
-            onChange={(e) => setExtractText(e.target.checked)}
-          />
-          提取 text 为 multiBlockContainer
-        </label>
+        <div className="headerControls">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={extractText}
+              onChange={(e) => setExtractText(e.target.checked)}
+            />
+            提取 text 为 multiBlockContainer
+          </label>
+          <label className="numberField">
+            offsetTop
+            <input
+              type="number"
+              className="numberInput"
+              value={offsetTop}
+              onChange={(e) => setOffsetTop(Number(e.target.value) || 0)}
+            />
+          </label>
+          <label className="numberField">
+            offsetLeft
+            <input
+              type="number"
+              className="numberInput"
+              value={offsetLeft}
+              onChange={(e) => setOffsetLeft(Number(e.target.value) || 0)}
+            />
+          </label>
+        </div>
       </header>
 
       <div className="toolbar">

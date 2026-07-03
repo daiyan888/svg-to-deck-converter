@@ -17,20 +17,27 @@ export function ConverterPanel() {
   const [syntaxWarnings, setSyntaxWarnings] = useState<string | null>(null);
   const [result, setResult] = useState<ConvertResult | null>(null);
   const [extractText, setExtractText] = useState(true);
+  const [offsetTop, setOffsetTop] = useState(0);
+  const [offsetLeft, setOffsetLeft] = useState(0);
   const [rendering, setRendering] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE);
   const [sdkPreviewSyntax, setSdkPreviewSyntax] = useState('');
 
+  const convertOptions = useMemo(
+    () => ({ extractText, offsetTop, offsetLeft }),
+    [extractText, offsetTop, offsetLeft],
+  );
+
   const handleConvert = useCallback(() => {
     try {
       setError(null);
-      const converted = convertSvgToDeck(svgInput, { extractText });
+      const converted = convertSvgToDeck(svgInput, convertOptions);
       setResult(converted);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [svgInput, extractText]);
+  }, [svgInput, convertOptions]);
 
   const jsonOutput = useMemo(() => {
     if (!result) {
@@ -70,7 +77,7 @@ export function ConverterPanel() {
       const syntax = await fetchGallerySyntax(DEFAULT_TEMPLATE);
       setSyntaxInput(syntax);
       setSdkPreviewSyntax(syntax);
-      const converted = convertSvgToDeck(SAMPLE_SVG, { extractText });
+      const converted = convertSvgToDeck(SAMPLE_SVG, convertOptions);
       setSvgInput(SAMPLE_SVG);
       setResult(converted);
     } catch (e) {
@@ -79,7 +86,7 @@ export function ConverterPanel() {
       setSvgInput(SAMPLE_SVG);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [extractText]);
+  }, [convertOptions]);
 
   const handleTemplateLoaded = useCallback(
     (payload: { svg: string; syntax: string; selection: { slug: string } }) => {
@@ -100,7 +107,7 @@ export function ConverterPanel() {
     setSyntaxWarnings(null);
 
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, { extractText });
+      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions);
       setSdkPreviewSyntax(syntaxInput);
       setSvgInput(pipeline.svg);
       setResult(pipeline.result);
@@ -118,7 +125,7 @@ export function ConverterPanel() {
     } finally {
       setRendering(false);
     }
-  }, [extractText, syntaxInput]);
+  }, [convertOptions, syntaxInput]);
 
   return (
     <div className={styles.layout}>
@@ -156,6 +163,24 @@ export function ConverterPanel() {
             onChange={(e) => setExtractText(e.target.checked)}
           />
           提取 &lt;text&gt; 为 multiBlockContainer
+        </label>
+        <label className={styles.numberField}>
+          offsetTop
+          <input
+            type="number"
+            className={styles.numberInput}
+            value={offsetTop}
+            onChange={(e) => setOffsetTop(Number(e.target.value) || 0)}
+          />
+        </label>
+        <label className={styles.numberField}>
+          offsetLeft
+          <input
+            type="number"
+            className={styles.numberInput}
+            value={offsetLeft}
+            onChange={(e) => setOffsetLeft(Number(e.target.value) || 0)}
+          />
         </label>
         <button
           type="button"

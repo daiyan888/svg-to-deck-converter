@@ -29,6 +29,8 @@ const { svg, document, stats } = await convertInfographicToDeck({
   convertOptions: {
     extractText: true,
   },
+  offsetTop: 0,
+  offsetLeft: 0,
 });
 ```
 
@@ -41,7 +43,11 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | `data` | Infographic 图表数据 |
 | `theme` | 可选，主题名称 |
 | `useGalleryDefaults` | 默认 `true`，从 Gallery 拉取示例的 theme / design 默认值 |
-| `convertOptions` | SVG → deck 转换选项 |
+| `convertOptions` | SVG → deck 转换选项，见下方说明 |
+| `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
+| `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
+| `width` | 可选，渲染宽度，默认 `960` |
+| `height` | 可选，渲染高度，默认 `640` |
 
 ### 返回值
 
@@ -88,10 +94,12 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
   convertOptions: {
     extractText: true,
   },
+  offsetTop: 0,
+  offsetLeft: 0,
 });
 
 // 也支持直接传入 syntax 字符串
-// await convertInfographicFromSyntax(syntax, { extractText: true });
+// await convertInfographicFromSyntax(syntax, { extractText: true, offsetTop: 0, offsetLeft: 0 });
 ```
 
 ### 参数说明
@@ -99,17 +107,41 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
 | 字段 | 说明 |
 |------|------|
 | `syntax` | 完整 Infographic Syntax 字符串 |
-| `convertOptions` | SVG → deck 转换选项 |
+| `convertOptions` | SVG → deck 转换选项，见下方说明 |
+| `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
+| `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
 
 ### 返回值
 
 与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告，无问题时为空数组）。
 
+## convertOptions
+
+`convertOptions` 用于控制 SVG → deck 的转换行为，适用于 `convertInfographicToDeck`、`convertInfographicFromSyntax` 和 `convertSvgToDeck`。
+
+| 字段 | 说明 |
+|------|------|
+| `extractText` | 是否将 SVG `<text>` / `<tspan>` 提取为 `multiBlockContainer`，默认 `true` |
+| `offsetTop` | 所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0` |
+| `offsetLeft` | 所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0` |
+| `defaultFontSize` | 文本提取时的默认字号，默认 `14` |
+| `defaultFontFamily` | 文本提取时的默认字体，默认 `sans-serif` |
+
+偏移会作用于 deck 下的**每一个** `deckNode`，包括 SVG 图形节点和提取出的文本节点。例如 `offsetTop: 100, offsetLeft: 50` 会将整张信息图整体下移 100px、右移 50px。
+
+在 `convertInfographicToDeck` / `convertInfographicFromSyntax` 中，顶层 `offsetTop` / `offsetLeft` 与 `convertOptions` 同时传入时，以顶层参数为准。
+
 ## 其他 API
 
 ```ts
-// 仅转换已有 SVG
+// 仅转换已有 SVG（同样支持 convertOptions.offsetTop / offsetLeft）
 import { convertSvgToDeck } from 'svg-to-deck-converter';
+
+const { document } = convertSvgToDeck(svgString, {
+  extractText: true,
+  offsetTop: 100,
+  offsetLeft: 50,
+});
 
 // 获取 Gallery 分类与模板列表
 import { getGalleryCategories } from 'svg-to-deck-converter';

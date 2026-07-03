@@ -38,6 +38,22 @@
   color: #475569;
 }
 
+.numberField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.numberInput {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
 .btn {
   padding: 8px 16px;
   border: 1px solid #cbd5e1;
