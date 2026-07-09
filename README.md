@@ -57,14 +57,14 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | 字段 | 说明 |
 |------|------|
 | `svg` | SDK 渲染出的 SVG 字符串（`width`/`height` 已写成目标像素，`viewBox` 仍为固有坐标系） |
-| `document` | TipTap deck JSON（`deckNode` / 文本位置与字号已按目标尺寸缩放） |
+| `document` | TipTap deck JSON（按目标尺寸等比 `meet` 适配：文本位置与字号同步缩放并居中留白） |
 | `stats` | 转换统计（commands 数、text 节点数等） |
 
 ### 尺寸参数示例
 
 `width` / `height` 写在入参对象顶层，单位为像素。
 
-说明：`@antv/infographic` 的 `width`/`height` 只影响显示容器，**不会改变模板固有 `viewBox`**。本库会在转换后把 deck 与 SVG 的显示尺寸拉伸到你指定的目标宽高（保留原始 `viewBox`，文本节点同步缩放位置与字号）。
+说明：`@antv/infographic` 的 `width`/`height` 只影响显示容器，**不会改变模板固有 `viewBox`**。本库会在转换后把 deck 与 SVG 适配到你指定的目标宽高：保留原始 `viewBox`，使用与 SVG 默认相同的等比缩放（`preserveAspectRatio=meet`）+ 居中留白；文本节点的 `left`/`top`/`width`/`height` 与字号按同一比例缩放，保证与图形对齐。
 
 ```ts
 // 默认尺寸：960 × 640（不传 width / height）

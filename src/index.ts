@@ -14,7 +14,15 @@ export {
   svgElementToCommands,
   extractTextBlocks,
   extractTextDeckNodes,
+  applyDeckOffsets,
+  applySvgPixelSize,
+  computeMeetLayout,
+  finalizeSizedConvertResult,
+  resolveTargetSize,
+  scaleConvertResult,
+  scaleDeckDocument,
 } from './converter/index.js';
+export type { TargetSize } from './converter/index.js';
 export type {
   CommandsItem,
   ConvertOptions,

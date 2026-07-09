@@ -4,6 +4,7 @@ export { extractTextBlocks, extractTextDeckNodes } from './text-extractor.js';
 export {
   applyDeckOffsets,
   applySvgPixelSize,
+  computeMeetLayout,
   finalizeSizedConvertResult,
   resolveTargetSize,
   scaleConvertResult,

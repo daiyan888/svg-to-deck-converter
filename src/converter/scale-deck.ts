@@ -80,7 +80,7 @@ function scaleSvgNode(node: SvgNode, target: TargetSize): SvgNode {
       ...node.attrs,
       width: target.width,
       height: target.height,
-      // 保留原始 viewBox，由 width/height 拉伸显示
+      // 保留原始 viewBox；默认 preserveAspectRatio=meet，与文本等比缩放一致
       viewBox: node.attrs.viewBox,
       commands: node.attrs.commands as CommandsItem[],
     },
@@ -98,11 +98,28 @@ function scaleDeckNodeChild(
   return scaleMultiBlockContainer(child, fontScale);
 }
 
+/**
+ * 计算与 SVG `preserveAspectRatio="xMidYMid meet"` 相同的等比缩放与居中偏移。
+ */
+export function computeMeetLayout(
+  natural: TargetSize,
+  target: TargetSize,
+): { scale: number; offsetX: number; offsetY: number } {
+  const scale = Math.min(target.width / natural.width, target.height / natural.height);
+  const contentWidth = natural.width * scale;
+  const contentHeight = natural.height * scale;
+  return {
+    scale,
+    offsetX: (target.width - contentWidth) / 2,
+    offsetY: (target.height - contentHeight) / 2,
+  };
+}
+
 function scaleDeckNode(
   node: DeckNode,
-  scaleX: number,
-  scaleY: number,
-  fontScale: number,
+  scale: number,
+  offsetX: number,
+  offsetY: number,
   target: TargetSize,
 ): DeckNode {
   const child = node.content[0];
@@ -111,12 +128,13 @@ function scaleDeckNode(
   return {
     ...node,
     attrs: {
-      width: isSvg ? target.width : scaleNumber(node.attrs.width, scaleX),
-      height: isSvg ? target.height : scaleNumber(node.attrs.height, scaleY),
-      top: scaleNumber(node.attrs.top, scaleY),
-      left: scaleNumber(node.attrs.left, scaleX),
+      width: isSvg ? target.width : scaleNumber(node.attrs.width, scale),
+      height: isSvg ? target.height : scaleNumber(node.attrs.height, scale),
+      // SVG 铺满目标画布（内部 meet 留白）；文本按 meet 后的内容区定位
+      top: isSvg ? 0 : scaleNumber(node.attrs.top, scale) + offsetY,
+      left: isSvg ? 0 : scaleNumber(node.attrs.left, scale) + offsetX,
     },
-    content: [scaleDeckNodeChild(child, target, fontScale)],
+    content: [scaleDeckNodeChild(child, target, scale)],
   };
 }
 
@@ -134,8 +152,8 @@ function findNaturalSize(document: DeckDocument): { width: number; height: numbe
 }
 
 /**
- * 将 deck 从 Infographic 固有 viewBox 尺寸拉伸到目标宽高。
- * SVG 图形保留 viewBox，只改显示宽高；文本节点同步缩放位置与字号。
+ * 将 deck 从 Infographic 固有 viewBox 尺寸适配到目标宽高。
+ * 使用与 SVG 默认 `meet` 相同的等比缩放 + 居中留白，保证图形与 multiBlockContainer 对齐。
  */
 export function scaleDeckDocument(document: DeckDocument, target: TargetSize): DeckDocument {
   const natural = findNaturalSize(document);
@@ -146,14 +164,12 @@ export function scaleDeckDocument(document: DeckDocument, target: TargetSize): D
     return document;
   }
 
-  const scaleX = target.width / natural.width;
-  const scaleY = target.height / natural.height;
-  const fontScale = Math.sqrt(scaleX * scaleY);
+  const { scale, offsetX, offsetY } = computeMeetLayout(natural, target);
 
   return {
     ...document,
     content: document.content.map((node) =>
-      scaleDeckNode(node, scaleX, scaleY, fontScale, target),
+      scaleDeckNode(node, scale, offsetX, offsetY, target),
     ),
   };
 }
@@ -167,6 +183,7 @@ export function scaleConvertResult(result: ConvertResult, target: TargetSize): C
 
 /**
  * 把 SVG 根节点的 width/height 写成目标像素，便于预览与二次转换。
+ * 保留默认 preserveAspectRatio=meet，与 deck 文本缩放一致。
  */
 export function applySvgPixelSize(svgString: string, target: TargetSize): string {
   const parser = new DOMParser();
@@ -183,6 +200,10 @@ export function applySvgPixelSize(svgString: string, target: TargetSize): string
 
   svgRoot.setAttribute('width', String(target.width));
   svgRoot.setAttribute('height', String(target.height));
+  // 明确 meet，避免上游带上 none 导致预览与 deck 不一致
+  if (!svgRoot.getAttribute('preserveAspectRatio')) {
+    svgRoot.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
 
   // 若缺少 viewBox，用当前解析结果补上，避免只改宽高后坐标系丢失
   if (!svgRoot.getAttribute('viewBox')) {
@@ -239,7 +260,7 @@ function findNaturalSizeFromDocument(document: DeckDocument): TargetSize | null 
 }
 
 /**
- * 转换后按目标宽高拉伸 deck，并把 SVG 的 width/height 写成目标像素。
+ * 转换后按目标宽高适配 deck（等比 meet），并把 SVG 的 width/height 写成目标像素。
  * offset 在缩放之后再叠加，保持为绝对像素。
  */
 export function finalizeSizedConvertResult(
