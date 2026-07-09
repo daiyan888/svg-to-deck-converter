@@ -1,4 +1,5 @@
 import { Infographic, type InfographicOptions } from '@antv/infographic';
+import { ensureLocalResourcesRegistered } from './local-resources.js';
 
 const RENDER_WIDTH = 960;
 const RENDER_HEIGHT = 640;
@@ -88,6 +89,8 @@ export async function renderInfographicSvg(
   options: string | Partial<InfographicOptions>,
   size: RenderInfographicSize = {},
 ): Promise<string> {
+  ensureLocalResourcesRegistered();
+
   if (isBrowserEnvironment()) {
     return renderInBrowser(options, size);
   }

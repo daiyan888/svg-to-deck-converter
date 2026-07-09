@@ -13,16 +13,31 @@ html,
 body,
 #root {
   margin: 0;
-  height: 100%;
+  min-height: 100%;
 }
 
 .page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
   padding: 16px 20px 20px;
   gap: 12px;
-  overflow: hidden;
+  overflow-y: auto;
+}
+
+.pageTop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.workArea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 0 auto;
+  min-height: 560px;
 }
 
 .header {
@@ -85,11 +100,133 @@ body,
   color: #1e293b;
 }
 
+.galleryPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.galleryPickerFields {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(240px, 1fr);
+  gap: 12px;
+}
+
+.galleryPickerField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.galleryPickerLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.galleryPickerSelect {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.galleryPickerMeta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.panelHint {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.apiDocs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.apiCard {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.apiName {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  color: #4f46e5;
+}
+
+.apiDesc {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.apiList {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.apiList > div + div {
+  margin-top: 8px;
+}
+
+.apiList dt {
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.apiList dd {
+  margin: 0 0 4px 0;
+  line-height: 1.5;
+}
+
+.apiList dd code {
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 0.78rem;
+  color: #4f46e5;
+}
+
+.apiList ul {
+  margin: 4px 0 0;
+  padding-left: 1.2rem;
+}
+
+.apiList li {
+  margin-bottom: 2px;
+}
+
+.apiList li code {
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 0.78rem;
+  color: #0f766e;
 }
 
 button {
@@ -143,7 +280,7 @@ button.secondary:hover {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   flex: 1;
-  min-height: 0;
+  min-height: 260px;
 }
 
 .panel {
@@ -200,11 +337,20 @@ button.secondary:hover {
 }
 
 @media (max-width: 900px) {
-  .grid {
+  .galleryPickerFields {
     grid-template-columns: 1fr;
   }
 
-  .page {
-    overflow: auto;
+  .apiDocs {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    min-height: 220px;
+  }
+
+  .workArea {
+    min-height: 480px;
   }
 }

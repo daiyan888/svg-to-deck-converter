@@ -1,17 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  convertSvgToDeck,
-  fetchGallerySyntax,
-  renderAndConvertFromSyntax,
-} from '../../dist/index.js';
+import { convertSvgToDeck, renderAndConvertFromSyntax } from '../../dist/index.js';
 import type { ConvertResult } from '../../dist/index.js';
+import { GalleryPicker } from './gallery-picker';
+import type { GalleryTemplatePayload } from './gallery-picker';
 import { SAMPLE_SVG } from './sample-svg';
-
-const DEFAULT_TEMPLATE = 'chart-bar-plain-text';
 
 export function App() {
   const [svgInput, setSvgInput] = useState(SAMPLE_SVG);
   const [syntaxInput, setSyntaxInput] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   const [result, setResult] = useState<ConvertResult | null>(null);
   const [renderedSvg, setRenderedSvg] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,17 +41,13 @@ export function App() {
     }
   }, [convertOptions, svgInput]);
 
-  const handleLoadGallerySyntax = useCallback(async () => {
-    setLoading(true);
+  const handleTemplateLoaded = useCallback((payload: GalleryTemplatePayload) => {
+    setSyntaxInput(payload.syntax);
+    setSvgInput(payload.svg);
+    setRenderedSvg(payload.svg);
+    setSelectedTemplate(payload.selection.slug);
+    setResult(null);
     setError(null);
-    try {
-      const syntax = await fetchGallerySyntax(DEFAULT_TEMPLATE);
-      setSyntaxInput(syntax);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
   }, []);
 
   const handleRenderAndConvert = useCallback(async () => {
@@ -124,12 +117,12 @@ export function App() {
         </div>
       </header>
 
+      <div className="pageTop">
+      <GalleryPicker onTemplateLoaded={handleTemplateLoaded} onError={setError} />
+
       <div className="toolbar">
         <button type="button" onClick={handleConvertSvg}>
           convertSvgToDeck
-        </button>
-        <button type="button" onClick={() => void handleLoadGallerySyntax()} disabled={loading}>
-          fetchGallerySyntax
         </button>
         <button type="button" onClick={() => void handleRenderAndConvert()} disabled={loading}>
           renderAndConvertFromSyntax
@@ -139,6 +132,67 @@ export function App() {
             复制 JSON
           </button>
         )}
+      </div>
+
+      <div className="apiDocs">
+        <section className="apiCard">
+          <h3 className="apiName">convertSvgToDeck</h3>
+          <p className="apiDesc">将左侧 SVG 字符串转为 TipTap deck JSON（同步，不经过 Infographic SDK 渲染）。</p>
+          <dl className="apiList">
+            <div>
+              <dt>入参</dt>
+              <dd>
+                <code>svgString: string</code> — 左侧「SVG 输入」文本框内容
+              </dd>
+              <dd>
+                <code>convertOptions?: ConvertOptions</code> — 页头选项：
+                <code>extractText</code>、<code>offsetTop</code>、<code>offsetLeft</code>
+                （另有 <code>defaultFontSize</code>、<code>defaultFontFamily</code> 默认值）
+              </dd>
+            </div>
+            <div>
+              <dt>返回</dt>
+              <dd>
+                <code>ConvertResult</code>
+                <ul>
+                  <li><code>document</code> — deck JSON（显示在「deck JSON 输出」）</li>
+                  <li><code>stats.commandCount</code> — SVG 绘图命令数</li>
+                  <li><code>stats.textNodeCount</code> — 提取的文本节点数</li>
+                  <li><code>stats.skippedNodes</code> — 跳过的 SVG 节点 id 列表</li>
+                </ul>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="apiCard">
+          <h3 className="apiName">renderAndConvertFromSyntax</h3>
+          <p className="apiDesc">
+            解析 Infographic Syntax → @antv/infographic SDK 渲染 SVG → 再调用 convertSvgToDeck（异步流水线）。
+          </p>
+          <dl className="apiList">
+            <div>
+              <dt>入参</dt>
+              <dd>
+                <code>syntax: string</code> — 右侧「Infographic Syntax」文本框内容
+              </dd>
+              <dd>
+                <code>convertOptions?: ConvertOptions</code> — 同上
+              </dd>
+            </div>
+            <div>
+              <dt>返回</dt>
+              <dd>
+                <code>Promise&lt;PipelineResult&gt;</code>
+                <ul>
+                  <li><code>svg</code> — SDK 渲染出的 SVG（更新左侧输入与「SVG 预览」）</li>
+                  <li><code>result</code> — 同上 <code>ConvertResult</code></li>
+                  <li><code>warnings</code> — Syntax 解析警告（非致命，无问题时为空数组）</li>
+                </ul>
+              </dd>
+            </div>
+          </dl>
+        </section>
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -151,7 +205,9 @@ export function App() {
           )}
         </div>
       )}
+      </div>
 
+      <div className="workArea">
       <div className="grid">
         <section className="panel">
           <h2>SVG 输入</h2>
@@ -163,12 +219,15 @@ export function App() {
         </section>
 
         <section className="panel">
-          <h2>Infographic Syntax</h2>
+          <h2>
+            Infographic Syntax
+            {selectedTemplate && <span className="panelHint"> · {selectedTemplate}</span>}
+          </h2>
           <textarea
             value={syntaxInput}
             onChange={(e) => setSyntaxInput(e.target.value)}
             spellCheck={false}
-            placeholder="点击 fetchGallerySyntax 加载，或手动粘贴 syntax"
+            placeholder="从上方 Gallery 选择器加载，或手动粘贴 syntax"
           />
         </section>
       </div>
@@ -189,6 +248,7 @@ export function App() {
           <h2>deck JSON 输出</h2>
           <textarea value={jsonOutput} readOnly spellCheck={false} placeholder="转换结果" />
         </section>
+      </div>
       </div>
     </div>
   );
