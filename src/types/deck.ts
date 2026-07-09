@@ -48,6 +48,11 @@ export type CommandAttributeValue = string | number | boolean;
 export interface CommandsItem {
   comp: string;
   children?: CommandsItem[];
+  /**
+   * 保留原始子节点 markup（用于 extractText=false 时的 text / tspan / foreignObject）。
+   * 渲染时原样写入元素内容，不作为 HTML 属性输出。
+   */
+  innerHTML?: string;
   [attr: string]: CommandAttributeValue | CommandsItem[] | undefined;
 }
 
@@ -84,7 +89,10 @@ export interface ConvertOptions {
   /** 所有 deckNode 的 top/left 统一偏移，默认 0 */
   offsetTop?: number;
   offsetLeft?: number;
-  /** 是否将 SVG <text>/<tspan> 提取为 multiBlockContainer，默认 true */
+  /**
+   * 是否将 SVG `<text>` / `<tspan>` / `foreignObject` 文本提取为 multiBlockContainer，默认 true。
+   * 为 false 时文本保留在 svg.commands 内（含 foreignObject 的 HTML 内容）。
+   */
   extractText?: boolean;
   /** 默认字号（无法从 SVG 解析时） */
   defaultFontSize?: number;

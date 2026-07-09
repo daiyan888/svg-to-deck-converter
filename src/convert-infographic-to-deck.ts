@@ -1,6 +1,7 @@
 import type { Data, InfographicOptions, SyntaxError, ThemeConfig } from '@antv/infographic';
 import { getTemplates, parseSyntax } from '@antv/infographic';
 import { convertSvgToDeck } from './converter/svg-to-deck.js';
+import { finalizeSizedConvertResult } from './converter/scale-deck.js';
 import { getCategoryId } from './gallery/categories.js';
 import { fetchGallerySyntax } from './gallery/fetch-gallery-syntax.js';
 import { renderInfographicSvg } from './gallery/render-gallery-svg.js';
@@ -116,23 +117,31 @@ export async function convertInfographicToDeck(
   assertTemplateInCategory(input.category, input.template);
 
   const renderOptions = await resolveRenderOptions(input);
+  const size = {
+    width: input.width ?? 960,
+    height: input.height ?? 640,
+  };
   const svg = await renderInfographicSvg(
     renderOptions as Parameters<typeof renderInfographicSvg>[0],
-    {
-      width: input.width ?? 960,
-      height: input.height ?? 640,
-    },
+    size,
   );
 
-  const converted = convertSvgToDeck(
-    svg,
-    resolveConvertOptions(input.convertOptions, input.offsetTop, input.offsetLeft),
+  const convertOptions = resolveConvertOptions(
+    input.convertOptions,
+    input.offsetTop,
+    input.offsetLeft,
   );
+  const converted = convertSvgToDeck(svg, {
+    ...convertOptions,
+    offsetTop: 0,
+    offsetLeft: 0,
+  });
+  const finalized = finalizeSizedConvertResult(svg, converted, size, convertOptions);
 
   return {
-    svg,
-    document: converted.document,
-    stats: converted.stats,
+    svg: finalized.svg,
+    document: finalized.result.document,
+    stats: finalized.result.stats,
     warnings: [],
   };
 }

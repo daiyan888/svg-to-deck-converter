@@ -49,20 +49,22 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | `convertOptions` | SVG → deck 转换选项，见下方说明 |
 | `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
 | `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
-| `width` | 可选，渲染宽度（像素），默认 `960` |
-| `height` | 可选，渲染高度（像素），默认 `640` |
+| `width` | 可选，目标输出宽度（像素），默认 `960`。Infographic 固有 viewBox 会按此拉伸到 deck / SVG |
+| `height` | 可选，目标输出高度（像素），默认 `640`。同上 |
 
 ### 返回值
 
 | 字段 | 说明 |
 |------|------|
-| `svg` | SDK 渲染出的 SVG 字符串 |
-| `document` | TipTap deck JSON |
+| `svg` | SDK 渲染出的 SVG 字符串（`width`/`height` 已写成目标像素，`viewBox` 仍为固有坐标系） |
+| `document` | TipTap deck JSON（`deckNode` / 文本位置与字号已按目标尺寸缩放） |
 | `stats` | 转换统计（commands 数、text 节点数等） |
 
 ### 尺寸参数示例
 
-`width` / `height` 写在入参对象顶层，单位为像素，会传给 `@antv/infographic` 控制 SVG 画布大小。
+`width` / `height` 写在入参对象顶层，单位为像素。
+
+说明：`@antv/infographic` 的 `width`/`height` 只影响显示容器，**不会改变模板固有 `viewBox`**。本库会在转换后把 deck 与 SVG 的显示尺寸拉伸到你指定的目标宽高（保留原始 `viewBox`，文本节点同步缩放位置与字号）。
 
 ```ts
 // 默认尺寸：960 × 640（不传 width / height）
@@ -72,7 +74,7 @@ await convertInfographicToDeck({
   data: { /* ... */ },
 });
 
-// 放大：1200 × 800
+// 放大：1200 × 800（deckNode.width/height 会变成 1200/800）
 await convertInfographicToDeck({
   category: 'chart-bar',
   template: 'chart-bar-plain-text',
@@ -147,8 +149,8 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
 | `convertOptions` | SVG → deck 转换选项，见下方说明 |
 | `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
 | `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
-| `width` | 可选，渲染宽度（像素），默认 `960` |
-| `height` | 可选，渲染高度（像素），默认 `640` |
+| `width` | 可选，目标输出宽度（像素），默认 `960`。转换后会把 deck / SVG 拉伸到该尺寸 |
+| `height` | 可选，目标输出高度（像素），默认 `640`。同上 |
 
 ### 返回值
 
@@ -156,7 +158,7 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
 
 ### 尺寸参数示例
 
-与 `convertInfographicToDeck` 相同：把 `width` / `height` 放在对象入参顶层。若使用「直接传 syntax 字符串」的简写形式，则无法指定尺寸，会走默认 `960 × 640`。
+与 `convertInfographicToDeck` 相同：把 `width` / `height` 放在对象入参顶层，转换后 `deckNode` 会变成目标尺寸。若使用「直接传 syntax 字符串」的简写形式，则无法指定尺寸，会走默认 `960 × 640`。
 
 ```ts
 // 默认尺寸：960 × 640

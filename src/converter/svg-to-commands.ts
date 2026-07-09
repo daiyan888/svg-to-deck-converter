@@ -5,7 +5,10 @@ import type { CommandsItem } from '../types/deck.js';
 export interface CommandConvertContext {
   skippedNodes: string[];
   commandCount: number;
+  /** 为 true 时跳过 foreignObject（文本已提取为 multiBlockContainer） */
   skipForeignObject?: boolean;
+  /** 为 true 时跳过 text/tspan（文本已提取为 multiBlockContainer） */
+  skipTextElements?: boolean;
 }
 
 function getElementChildren(el: Element): Element[] {
@@ -14,16 +17,60 @@ function getElementChildren(el: Element): Element[] {
   );
 }
 
+/** 序列化子节点，保留 text / foreignObject 内的原始 markup 与文本 */
+function serializeChildNodes(el: Element): string {
+  return Array.from(el.childNodes)
+    .map((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        return (node as Element).outerHTML;
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent ?? '';
+      }
+      return '';
+    })
+    .join('');
+}
+
+function elementWithPreservedContent(el: Element, comp: string): CommandsItem {
+  const props = collectElementProps(el);
+  const innerHTML = serializeChildNodes(el);
+  return {
+    comp,
+    ...props,
+    ...(innerHTML ? { innerHTML } : {}),
+  };
+}
+
 function elementToCommand(el: Element, ctx: CommandConvertContext): CommandsItem | null {
   const tag = el.tagName.toLowerCase();
-  if (isSkippableRoot(tag) || isTextElement(tag)) {
-    return null;
-  }
-  if (ctx.skipForeignObject && tag === 'foreignobject') {
+  if (isSkippableRoot(tag)) {
     return null;
   }
 
-  const elementChildren = getElementChildren(el).filter((child) => !isTextElement(child.tagName));
+  if (isTextElement(tag)) {
+    if (ctx.skipTextElements) {
+      return null;
+    }
+    ctx.commandCount += 1;
+    return elementWithPreservedContent(el, resolveComp(tag, el.childElementCount > 0));
+  }
+
+  if (tag === 'foreignobject') {
+    if (ctx.skipForeignObject) {
+      return null;
+    }
+    // HTML 子树不能按 SVG comp 规则转换，否则会变成无文本的 path
+    ctx.commandCount += 1;
+    return elementWithPreservedContent(el, 'foreignObject');
+  }
+
+  const elementChildren = getElementChildren(el).filter((child) => {
+    if (isTextElement(child.tagName)) {
+      return !ctx.skipTextElements;
+    }
+    return true;
+  });
   const comp = resolveComp(tag, elementChildren.length > 0);
   const props = collectElementProps(el);
 
@@ -55,7 +102,7 @@ export function svgElementToCommands(
 ): CommandsItem[] {
   const commands: CommandsItem[] = [];
   for (const child of getElementChildren(svgRoot)) {
-    if (isTextElement(child.tagName)) {
+    if (isTextElement(child.tagName) && ctx.skipTextElements) {
       continue;
     }
     const item = elementToCommand(child, ctx);

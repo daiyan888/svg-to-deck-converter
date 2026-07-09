@@ -1,5 +1,6 @@
 import { parseSyntax, type SyntaxError } from '@antv/infographic';
 import { convertSvgToDeck } from '../converter/svg-to-deck.js';
+import { finalizeSizedConvertResult } from '../converter/scale-deck.js';
 import type { ConvertOptions, ConvertResult } from '../types/deck.js';
 import {
   renderInfographicSvg,
@@ -34,11 +35,17 @@ export async function renderAndConvertFromSyntax(
   }
 
   const svg = await renderInfographicSvg(trimmed, size);
-  const result = convertSvgToDeck(svg, options);
+  // 转换时先不带 offset，由 finalize 在缩放后统一叠加
+  const converted = convertSvgToDeck(svg, {
+    ...options,
+    offsetTop: 0,
+    offsetLeft: 0,
+  });
+  const finalized = finalizeSizedConvertResult(svg, converted, size, options);
 
   return {
-    svg,
-    result,
+    svg: finalized.svg,
+    result: finalized.result,
     warnings: parsed.warnings,
   };
 }

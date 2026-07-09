@@ -38,6 +38,7 @@ export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}
     skippedNodes: [] as string[],
     commandCount: 0,
     skipForeignObject: opts.extractText,
+    skipTextElements: opts.extractText,
   };
   const textCtx = { textNodeCount: 0 };
 

@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       'svg-to-deck-converter': resolve(__dirname, 'src/index.ts'),
+      // Match tsup browser build: Node-only modules resolve to stubs in Vite/dev
+      'svg-to-deck-local-fonts': resolve(__dirname, 'src/stubs/local-fonts.ts'),
+      '@antv/infographic/ssr': resolve(__dirname, 'src/stubs/infographic-ssr.ts'),
     },
   },
   server: {

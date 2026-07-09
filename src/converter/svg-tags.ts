@@ -24,6 +24,8 @@ export const EXTENDED_COMPS = new Set([
   'pattern',
   'symbol',
   'marker',
+  'text',
+  'tspan',
   'foreignObject',
   'filter',
   'feBlend',

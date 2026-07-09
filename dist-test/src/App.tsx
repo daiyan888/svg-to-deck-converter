@@ -16,11 +16,15 @@ export function App() {
   const [extractText, setExtractText] = useState(true);
   const [offsetTop, setOffsetTop] = useState(0);
   const [offsetLeft, setOffsetLeft] = useState(0);
+  const [width, setWidth] = useState(960);
+  const [height, setHeight] = useState(640);
 
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
     [extractText, offsetTop, offsetLeft],
   );
+
+  const renderSize = useMemo(() => ({ width, height }), [width, height]);
 
   const jsonOutput = useMemo(() => {
     if (!result) {
@@ -58,7 +62,7 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions);
+      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions, renderSize);
       setRenderedSvg(pipeline.svg);
       setSvgInput(pipeline.svg);
       setResult(pipeline.result);
@@ -68,7 +72,7 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [convertOptions, syntaxInput]);
+  }, [convertOptions, renderSize, syntaxInput]);
 
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
@@ -112,6 +116,26 @@ export function App() {
               className="numberInput"
               value={offsetLeft}
               onChange={(e) => setOffsetLeft(Number(e.target.value) || 0)}
+            />
+          </label>
+          <label className="numberField">
+            width
+            <input
+              type="number"
+              className="numberInput"
+              min={1}
+              value={width}
+              onChange={(e) => setWidth(Math.max(1, Number(e.target.value) || 960))}
+            />
+          </label>
+          <label className="numberField">
+            height
+            <input
+              type="number"
+              className="numberInput"
+              min={1}
+              value={height}
+              onChange={(e) => setHeight(Math.max(1, Number(e.target.value) || 640))}
             />
           </label>
         </div>
@@ -178,6 +202,10 @@ export function App() {
               </dd>
               <dd>
                 <code>convertOptions?: ConvertOptions</code> — 同上
+              </dd>
+              <dd>
+                <code>size?: {'{'} width?, height? {'}'}</code> — 页头
+                <code>width</code> / <code>height</code>（默认 960 × 640）
               </dd>
             </div>
             <div>

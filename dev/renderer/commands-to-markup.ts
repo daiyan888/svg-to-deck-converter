@@ -83,7 +83,7 @@ function attrsToString(attrs: Record<string, string | number | boolean>): string
 function commandAttrs(item: CommandsItem): Record<string, string | number | boolean> {
   const attrs: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(item)) {
-    if (key === 'comp' || key === 'children') {
+    if (key === 'comp' || key === 'children' || key === 'innerHTML') {
       continue;
     }
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -94,9 +94,13 @@ function commandAttrs(item: CommandsItem): Record<string, string | number | bool
 }
 
 export function commandToMarkup(item: CommandsItem): string {
-  const { comp, children } = item;
+  const { comp, children, innerHTML } = item;
   const attrs = attrsToString(commandAttrs(item));
   const open = attrs ? `<${comp} ${attrs}` : `<${comp}`;
+
+  if (typeof innerHTML === 'string') {
+    return `${open}>${innerHTML}</${comp}>`;
+  }
 
   if (!children?.length) {
     return VOID_ELEMENTS.has(comp) ? `${open} />` : `${open}></${comp}>`;

@@ -9,6 +9,8 @@ import { SAMPLE_SVG } from '../samples/default-svg';
 import styles from './converter-panel.module.css';
 
 const DEFAULT_TEMPLATE = 'chart-bar-plain-text';
+const DEFAULT_RENDER_WIDTH = 960;
+const DEFAULT_RENDER_HEIGHT = 640;
 
 export function ConverterPanel() {
   const [syntaxInput, setSyntaxInput] = useState('');
@@ -19,6 +21,8 @@ export function ConverterPanel() {
   const [extractText, setExtractText] = useState(true);
   const [offsetTop, setOffsetTop] = useState(0);
   const [offsetLeft, setOffsetLeft] = useState(0);
+  const [renderWidth, setRenderWidth] = useState(DEFAULT_RENDER_WIDTH);
+  const [renderHeight, setRenderHeight] = useState(DEFAULT_RENDER_HEIGHT);
   const [rendering, setRendering] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE);
   const [sdkPreviewSyntax, setSdkPreviewSyntax] = useState('');
@@ -26,6 +30,14 @@ export function ConverterPanel() {
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
     [extractText, offsetTop, offsetLeft],
+  );
+
+  const renderSize = useMemo(
+    () => ({
+      width: renderWidth > 0 ? renderWidth : DEFAULT_RENDER_WIDTH,
+      height: renderHeight > 0 ? renderHeight : DEFAULT_RENDER_HEIGHT,
+    }),
+    [renderWidth, renderHeight],
   );
 
   const handleConvert = useCallback(() => {
@@ -107,7 +119,7 @@ export function ConverterPanel() {
     setSyntaxWarnings(null);
 
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions);
+      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions, renderSize);
       setSdkPreviewSyntax(syntaxInput);
       setSvgInput(pipeline.svg);
       setResult(pipeline.result);
@@ -125,7 +137,7 @@ export function ConverterPanel() {
     } finally {
       setRendering(false);
     }
-  }, [convertOptions, syntaxInput]);
+  }, [convertOptions, renderSize, syntaxInput]);
 
   return (
     <div className={styles.layout}>
@@ -180,6 +192,26 @@ export function ConverterPanel() {
             className={styles.numberInput}
             value={offsetLeft}
             onChange={(e) => setOffsetLeft(Number(e.target.value) || 0)}
+          />
+        </label>
+        <label className={styles.numberField}>
+          width
+          <input
+            type="number"
+            className={styles.numberInput}
+            min={1}
+            value={renderWidth}
+            onChange={(e) => setRenderWidth(Number(e.target.value) || 0)}
+          />
+        </label>
+        <label className={styles.numberField}>
+          height
+          <input
+            type="number"
+            className={styles.numberInput}
+            min={1}
+            value={renderHeight}
+            onChange={(e) => setRenderHeight(Number(e.target.value) || 0)}
           />
         </label>
         <button
