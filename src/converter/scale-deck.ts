@@ -137,6 +137,7 @@ function scaleDeckNode(
   return {
     ...node,
     attrs: {
+      ...node.attrs,
       width: isSvg ? target.width : scaleNumber(node.attrs.width, scale),
       height: isSvg ? target.height : scaleNumber(node.attrs.height, scale),
       // SVG 铺满目标画布（内部 meet 留白）；文本按 meet 后的内容区定位

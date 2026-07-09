@@ -271,8 +271,8 @@ dev/                  # 本地开发测试页面
 
 ```
 deck
-└── deckNode (width, height, top, left)
+└── deckNode (width, height, top, left[, wrap])
     ├── svg (commands[])
-    └── multiBlockContainer
+    └── multiBlockContainer  ← 其父 deckNode 固定 wrap: false；字号为 pt（px×72/96）
         └── paragraph → text + textStyle
 ```

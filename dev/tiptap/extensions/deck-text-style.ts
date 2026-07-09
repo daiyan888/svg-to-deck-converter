@@ -12,7 +12,7 @@ export const DeckTextStyle = Mark.create({
       },
       fontSize: {
         default: '14px',
-        parseHTML: (element) => element.style.fontSize || '14px',
+        parseHTML: (element) => element.style.fontSize || '10.5pt',
         renderHTML: (attributes) => ({ fontSize: attributes.fontSize }),
       },
     };

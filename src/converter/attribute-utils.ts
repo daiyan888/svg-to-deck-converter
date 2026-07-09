@@ -142,6 +142,16 @@ export function formatFontSizePx(value: number): string {
   return `${value}px`;
 }
 
+/** CSS px → pt（96dpi → 72dpi）：pt = px * 72 / 96 */
+export function pxToPt(px: number): number {
+  return (px * 72) / 96;
+}
+
+/** 将像素字号格式化为 pt 字符串，供 multiBlockContainer textStyle 使用 */
+export function formatFontSizePt(px: number): string {
+  return `${pxToPt(px)}pt`;
+}
+
 export function parseFontSize(value: string | number | undefined, fallback: number): number {
   if (typeof value === 'number') {
     return value;
