@@ -270,7 +270,7 @@ function findNaturalSizeFromDocument(document: DeckDocument): TargetSize | null 
 
 /**
  * 转换后按目标宽高适配 deck（等比 meet），并把 SVG 的 width/height 写成目标像素。
- * offset 在缩放之后再叠加，保持为绝对像素。
+ * 调用方应先以 offset=0 转换，再由本函数在缩放后统一叠加 offset（作用于全部 deckNode）。
  */
 export function finalizeSizedConvertResult(
   svg: string,
@@ -281,15 +281,10 @@ export function finalizeSizedConvertResult(
   const offsetTop = options.offsetTop ?? 0;
   const offsetLeft = options.offsetLeft ?? 0;
 
-  const unoffsetDocument =
-    offsetTop !== 0 || offsetLeft !== 0
-      ? applyDeckOffsets(result.document, -offsetTop, -offsetLeft)
-      : result.document;
-
-  const natural = findNaturalSizeFromDocument(unoffsetDocument);
+  const natural = findNaturalSizeFromDocument(result.document);
   const target = natural ? resolveTargetSize(size, natural) : null;
 
-  let document = unoffsetDocument;
+  let document = result.document;
   let nextSvg = svg;
 
   if (target) {
@@ -297,6 +292,7 @@ export function finalizeSizedConvertResult(
     nextSvg = applySvgPixelSize(svg, target);
   }
 
+  // SVG 与 multiBlockContainer 所在的每个 deckNode 一并偏移
   document = applyDeckOffsets(document, offsetTop, offsetLeft);
 
   return {
