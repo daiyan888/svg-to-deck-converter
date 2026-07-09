@@ -24,12 +24,14 @@ export default defineConfig([
     esbuildOptions(options) {
       options.alias = {
         '@antv/infographic/ssr': resolve(__dirname, 'src/stubs/infographic-ssr.ts'),
+        'svg-to-deck-local-fonts': resolve(__dirname, 'src/stubs/local-fonts.ts'),
       };
     },
     async onSuccess() {
       rmSync(resolve(distDir, 'converter'), { recursive: true, force: true });
       rmSync(resolve(distDir, 'gallery'), { recursive: true, force: true });
       rmSync(resolve(distDir, 'types'), { recursive: true, force: true });
+      rmSync(resolve(distDir, 'stubs'), { recursive: true, force: true });
     },
   },
   {
@@ -39,5 +41,13 @@ export default defineConfig([
     platform: 'node',
     clean: false,
     dts: false,
+    // Keep Node-native deps external so postcss/linkedom keep working under ESM.
+    noExternal: [/@antv\/infographic/],
+    external: ['postcss', 'linkedom', 'measury'],
+    esbuildOptions(options) {
+      options.alias = {
+        'svg-to-deck-local-fonts': resolve(__dirname, 'src/gallery/local-fonts.ts'),
+      };
+    },
   },
 ]);

@@ -74,6 +74,9 @@ async function renderInNode(
   options: string | Partial<InfographicOptions>,
   size: RenderInfographicSize,
 ): Promise<string> {
+  const { ensureLocalFontFetchInstalled } = await import('svg-to-deck-local-fonts');
+  ensureLocalFontFetchInstalled();
+
   const { renderToString } = await import('@antv/infographic/ssr');
   return renderToString(options as Parameters<typeof renderToString>[0], {
     width: size.width ?? RENDER_WIDTH,

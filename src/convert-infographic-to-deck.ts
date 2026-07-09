@@ -46,6 +46,10 @@ export interface ConvertInfographicFromSyntaxInput {
   offsetTop?: number;
   /** 所有 deckNode 的 left 统一偏移（优先级高于 convertOptions.offsetLeft） */
   offsetLeft?: number;
+  /** 渲染宽度，默认 960 */
+  width?: number;
+  /** 渲染高度，默认 640 */
+  height?: number;
 }
 
 function resolveConvertOptions(
@@ -145,7 +149,11 @@ export async function convertInfographicFromSyntax(
     typeof input === 'string'
       ? convertOptions
       : resolveConvertOptions(input.convertOptions, input.offsetTop, input.offsetLeft);
-  const pipeline = await renderAndConvertFromSyntax(syntax, options);
+  const size =
+    typeof input === 'string'
+      ? {}
+      : { width: input.width, height: input.height };
+  const pipeline = await renderAndConvertFromSyntax(syntax, options, size);
 
   return {
     svg: pipeline.svg,

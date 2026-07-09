@@ -1,7 +1,10 @@
 import { parseSyntax, type SyntaxError } from '@antv/infographic';
 import { convertSvgToDeck } from '../converter/svg-to-deck.js';
 import type { ConvertOptions, ConvertResult } from '../types/deck.js';
-import { renderInfographicSvg } from './render-gallery-svg.js';
+import {
+  renderInfographicSvg,
+  type RenderInfographicSize,
+} from './render-gallery-svg.js';
 
 export interface PipelineResult {
   svg: string;
@@ -18,6 +21,7 @@ function formatSyntaxErrors(errors: SyntaxError[]): string {
 export async function renderAndConvertFromSyntax(
   syntax: string,
   options: ConvertOptions = {},
+  size: RenderInfographicSize = {},
 ): Promise<PipelineResult> {
   const trimmed = syntax.trim();
   if (!trimmed) {
@@ -29,7 +33,7 @@ export async function renderAndConvertFromSyntax(
     throw new Error(`Syntax 解析失败:\n${formatSyntaxErrors(parsed.errors)}`);
   }
 
-  const svg = await renderInfographicSvg(trimmed);
+  const svg = await renderInfographicSvg(trimmed, size);
   const result = convertSvgToDeck(svg, options);
 
   return {

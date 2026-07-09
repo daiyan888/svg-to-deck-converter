@@ -46,11 +46,15 @@ export function ensureLocalResourcesRegistered(): void {
       resources[key] ??
       resources[data] ??
       (alias ? resources[makeResourceKey('icon', alias)] : undefined);
-    if (!svg) {
-      return null;
+
+    // 命中本地资源；未命中时返回空 symbol，避免 SDK 再回退到 weavefox 远程搜索导致 SSR 超时
+    if (svg) {
+      return loadSVGResource(svg);
     }
 
-    return loadSVGResource(svg);
+    return loadSVGResource(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
+    );
   });
 }
 

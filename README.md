@@ -26,6 +26,9 @@ const { svg, document, stats } = await convertInfographicToDeck({
       { label: '2024年', value: 240, desc: '冲击新高', icon: 'lucide/trophy' },
     ],
   },
+  // 控制渲染尺寸（像素）。不传则默认 960 × 640
+  width: 1200,
+  height: 800,
   convertOptions: {
     extractText: true,
   },
@@ -46,8 +49,8 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | `convertOptions` | SVG → deck 转换选项，见下方说明 |
 | `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
 | `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
-| `width` | 可选，渲染宽度，默认 `960` |
-| `height` | 可选，渲染高度，默认 `640` |
+| `width` | 可选，渲染宽度（像素），默认 `960` |
+| `height` | 可选，渲染高度（像素），默认 `640` |
 
 ### 返回值
 
@@ -56,6 +59,37 @@ const { svg, document, stats } = await convertInfographicToDeck({
 | `svg` | SDK 渲染出的 SVG 字符串 |
 | `document` | TipTap deck JSON |
 | `stats` | 转换统计（commands 数、text 节点数等） |
+
+### 尺寸参数示例
+
+`width` / `height` 写在入参对象顶层，单位为像素，会传给 `@antv/infographic` 控制 SVG 画布大小。
+
+```ts
+// 默认尺寸：960 × 640（不传 width / height）
+await convertInfographicToDeck({
+  category: 'chart-bar',
+  template: 'chart-bar-plain-text',
+  data: { /* ... */ },
+});
+
+// 放大：1200 × 800
+await convertInfographicToDeck({
+  category: 'chart-bar',
+  template: 'chart-bar-plain-text',
+  data: { /* ... */ },
+  width: 1200,
+  height: 800,
+});
+
+// 缩小：640 × 480
+await convertInfographicToDeck({
+  category: 'chart-bar',
+  template: 'chart-bar-plain-text',
+  data: { /* ... */ },
+  width: 640,
+  height: 480,
+});
+```
 
 ## 从 Syntax 转换
 
@@ -91,6 +125,9 @@ theme light
 
 const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
   syntax,
+  // 控制渲染尺寸（像素）。不传则默认 960 × 640
+  width: 1200,
+  height: 800,
   convertOptions: {
     extractText: true,
   },
@@ -98,7 +135,7 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
   offsetLeft: 0,
 });
 
-// 也支持直接传入 syntax 字符串
+// 也支持直接传入 syntax 字符串（此时无法传 width / height，会使用默认 960 × 640）
 // await convertInfographicFromSyntax(syntax, { extractText: true, offsetTop: 0, offsetLeft: 0 });
 ```
 
@@ -110,10 +147,40 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
 | `convertOptions` | SVG → deck 转换选项，见下方说明 |
 | `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
 | `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
+| `width` | 可选，渲染宽度（像素），默认 `960` |
+| `height` | 可选，渲染高度（像素），默认 `640` |
 
 ### 返回值
 
 与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告，无问题时为空数组）。
+
+### 尺寸参数示例
+
+与 `convertInfographicToDeck` 相同：把 `width` / `height` 放在对象入参顶层。若使用「直接传 syntax 字符串」的简写形式，则无法指定尺寸，会走默认 `960 × 640`。
+
+```ts
+// 默认尺寸：960 × 640
+await convertInfographicFromSyntax({
+  syntax,
+});
+
+// 放大：1440 × 900
+await convertInfographicFromSyntax({
+  syntax,
+  width: 1440,
+  height: 900,
+});
+
+// 缩小：480 × 360
+await convertInfographicFromSyntax({
+  syntax,
+  width: 480,
+  height: 360,
+});
+
+// ❌ 简写形式无法传尺寸，始终为默认 960 × 640
+await convertInfographicFromSyntax(syntax, { extractText: true });
+```
 
 ## convertOptions
 
