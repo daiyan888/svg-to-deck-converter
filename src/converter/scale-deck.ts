@@ -17,6 +17,15 @@ export interface TargetSize {
   height: number;
 }
 
+function serializeSvgElement(el: Element): string {
+  const Serializer = (globalThis as { XMLSerializer?: typeof XMLSerializer }).XMLSerializer;
+  if (typeof Serializer === 'function') {
+    return new Serializer().serializeToString(el);
+  }
+  // linkedom / 部分 SSR 环境可能未挂 XMLSerializer
+  return (el as Element & { outerHTML?: string }).outerHTML ?? '';
+}
+
 function scaleNumber(value: number, scale: number): number {
   return value * scale;
 }
@@ -211,7 +220,7 @@ export function applySvgPixelSize(svgString: string, target: TargetSize): string
     svgRoot.setAttribute('viewBox', viewBox.viewBox);
   }
 
-  return new XMLSerializer().serializeToString(svgRoot);
+  return serializeSvgElement(svgRoot);
 }
 
 export function resolveTargetSize(

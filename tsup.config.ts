@@ -41,9 +41,13 @@ export default defineConfig([
     platform: 'node',
     clean: false,
     dts: false,
-    // Keep Node-native deps external so postcss/linkedom keep working under ESM.
-    noExternal: [/@antv\/infographic/],
-    external: ['postcss', 'linkedom', 'measury'],
+    // Bundle SSR runtime deps so copying only dist/ works without installing
+    // measury / linkedom / postcss in the consumer project.
+    noExternal: [/@antv\/infographic/, 'measury', /^measury\//, 'linkedom', 'postcss'],
+    // postcss 等 CJS 依赖会 require('path')；ESM 产物需注入 createRequire
+    banner: {
+      js: "import { createRequire as __svgToDeckCreateRequire } from 'node:module'; const require = __svgToDeckCreateRequire(import.meta.url);",
+    },
     esbuildOptions(options) {
       options.alias = {
         'svg-to-deck-local-fonts': resolve(__dirname, 'src/gallery/local-fonts.ts'),

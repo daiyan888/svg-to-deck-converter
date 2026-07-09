@@ -9,8 +9,22 @@ export interface RenderInfographicSize {
   height?: number;
 }
 
+function isNodeEnvironment(): boolean {
+  const proc = (globalThis as { process?: { versions?: { node?: string } } }).process;
+  return typeof proc?.versions?.node === 'string';
+}
+
 function isBrowserEnvironment(): boolean {
-  return typeof document !== 'undefined' && typeof document.createElement === 'function';
+  // Node（含注入了 document 的 SSR / 测试环境）一律走 SSR，避免半成品 DOM 误判
+  if (isNodeEnvironment()) {
+    return false;
+  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof document !== 'undefined' &&
+    typeof document.createElement === 'function' &&
+    typeof SVGElement !== 'undefined'
+  );
 }
 
 function waitForInfographicReady(
@@ -78,10 +92,27 @@ async function renderInNode(
   ensureLocalFontFetchInstalled();
 
   const { renderToString } = await import('@antv/infographic/ssr');
-  return renderToString(options as Parameters<typeof renderToString>[0], {
+  const svg = await renderToString(options as Parameters<typeof renderToString>[0], {
     width: size.width ?? RENDER_WIDTH,
     height: size.height ?? RENDER_HEIGHT,
   });
+
+  // setupDOM 可能未挂上 XMLSerializer；后续 convert / applySvgPixelSize 需要它
+  ensureXmlSerializerGlobal();
+  return svg;
+}
+
+function ensureXmlSerializerGlobal(): void {
+  const g = globalThis as {
+    XMLSerializer?: unknown;
+    window?: { XMLSerializer?: unknown };
+  };
+  if (typeof g.XMLSerializer === 'function') {
+    return;
+  }
+  if (typeof g.window?.XMLSerializer === 'function') {
+    g.XMLSerializer = g.window.XMLSerializer;
+  }
 }
 
 /**

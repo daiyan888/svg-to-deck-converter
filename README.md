@@ -231,7 +231,25 @@ npm run dev
 npm run build
 ```
 
-使用 `tsc` 将 `src/` 编译为 `dist/`（`.js` + `.d.ts`）。
+会生成两份入口：
+
+| 文件 | 用途 |
+|------|------|
+| `dist/index.js` | 浏览器（Vite / Webpack `browser` 条件），用 DOM 渲染 Infographic |
+| `dist/index.node.js` | Node（`main` / `exports.node`），内含 `@antv/infographic/ssr` 及 `measury` / `linkedom` / `postcss` |
+| `dist/index.d.ts` | 类型声明（两份入口共用） |
+
+### 复制 dist 到其他项目时
+
+- **Node / 脚本 / 服务端**：必须引用 `index.node.js`，例如：
+
+```ts
+import { convertInfographicFromSyntax } from './vendor/svg-to-deck-converter/index.node.js';
+```
+
+- **浏览器**：引用 `index.js`。若误用 `index.js` 却在无 `document` 的环境调用 `convertInfographicFromSyntax`，会报 SSR 未包含在浏览器 bundle 中。
+
+通过 `npm install` 安装本包时，Node 会走 `exports.node` → `index.node.js`，打包工具的 `browser` 条件会走 `index.js`。
 
 ## 项目结构
 
