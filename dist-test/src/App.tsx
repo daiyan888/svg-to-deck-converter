@@ -6,7 +6,7 @@ import {
   type DeckDocument,
   type DeckTheme,
   type ThemeColorSlot,
-} from '../../dist/index.js';
+} from '../../dist/browser/index.js';
 import { DeckPreview } from './deck-preview';
 import { GalleryPicker } from './gallery-picker';
 import type { GalleryTemplatePayload } from './gallery-picker';
@@ -187,7 +187,7 @@ export function App() {
         <div>
           <h1>dist 独立测试页</h1>
           <p>
-            通过 <code>import ... from &apos;../../dist/index.js&apos;</code> 直接引用打包后的
+            通过 <code>import ... from &apos;../../dist/browser/index.js&apos;</code> 直接引用打包后的
             <code>dist/</code>（已内联 @antv/infographic，零额外运行时依赖）
           </p>
         </div>

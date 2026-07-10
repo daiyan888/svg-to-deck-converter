@@ -32,8 +32,8 @@ npm run test:cjs   # node run-cjs.cjs
 
 两边都应打印 `ok`，并输出 theme / nodes / commands 等信息。
 
-若 CJS 失败且报 `import.meta`，说明又走到了 ESM 的 `index.node.js`，检查：
+若 CJS 失败且报 `import.meta`，说明又走到了 ESM 的 `dist/node/index.js`，检查：
 
 1. `dist-use/dist/getDeckNodes.cjs` 是否存在
-2. 根目录 `dist/index.node.cjs` 是否存在
+2. 根目录 `dist/node/index.cjs` 是否存在
 3. `dist-use` / 本库 `package.json` 的 `exports.require` 是否指向 `.cjs`

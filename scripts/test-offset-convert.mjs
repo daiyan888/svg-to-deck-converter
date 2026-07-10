@@ -6,7 +6,7 @@ globalThis.document = window.document;
 globalThis.DOMParser = window.DOMParser;
 globalThis.Node = window.Node;
 
-const { convertSvgToDeck } = await import('../dist/index.js');
+const { convertSvgToDeck } = await import('../dist/browser/index.js');
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 <rect x="10" y="10" width="30" height="30" fill="red"></rect>

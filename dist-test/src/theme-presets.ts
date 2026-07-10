@@ -1,5 +1,5 @@
-import type { DeckTheme, DeckThemeConfig } from '../../dist/index.js';
-import { DEFAULT_DECK_THEME } from '../../dist/index.js';
+import type { DeckTheme, DeckThemeConfig } from '../../dist/browser/index.js';
+import { DEFAULT_DECK_THEME } from '../../dist/browser/index.js';
 
 export interface ThemePreset {
   id: string;

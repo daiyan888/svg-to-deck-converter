@@ -9,7 +9,7 @@ import {
   type MultiBlockContainerNode,
   type ParagraphNode,
   type TextNode,
-} from '../../dist/index.js';
+} from '../../dist/browser/index.js';
 
 const COLOR_ATTRS = new Set([
   'fill',

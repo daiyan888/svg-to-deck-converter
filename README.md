@@ -187,6 +187,7 @@ npm run build
 
 | 文件 | 用途 |
 |------|------|
-| `dist/index.js` / `dist/index.cjs` | 浏览器（ESM / CJS） |
-| `dist/index.node.js` / `dist/index.node.cjs` | Node（ESM / CJS） |
-| `dist/index.d.ts` | 类型声明 |
+| `dist/browser/index.js` / `index.cjs` | 浏览器（ESM / CJS） |
+| `dist/node/index.js` / `index.cjs` | Node（ESM / CJS） |
+| `dist/browser/index.d.ts` | 类型声明 |
+

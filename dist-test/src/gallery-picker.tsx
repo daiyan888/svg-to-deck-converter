@@ -4,7 +4,7 @@ import {
   fetchGallerySyntax,
   getGalleryCategories,
   renderGallerySvgFromSyntax,
-} from '../../dist/index.js';
+} from '../../dist/browser/index.js';
 
 export interface GallerySelection {
   categoryId: string;

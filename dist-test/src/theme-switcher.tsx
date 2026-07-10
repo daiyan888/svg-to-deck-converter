@@ -1,4 +1,4 @@
-import type { DeckTheme, ThemeColorSlot } from '../../dist/index.js';
+import type { DeckTheme, ThemeColorSlot } from '../../dist/browser/index.js';
 import { findPresetId, THEME_PRESETS, type ThemePreset } from './theme-presets';
 
 const SWATCH_SLOTS: ThemeColorSlot[] = [

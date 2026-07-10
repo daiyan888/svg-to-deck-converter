@@ -6,7 +6,10 @@ import { defineConfig } from 'tsup';
  * - getDeckNodes.cjs → CJS（require）
  *
  * svg-to-deck-converter 外置：由 package.json exports 自动选
- * index.node.js / index.node.cjs，不要手写 require(index.node.js)。
+ * dist/node/index.js / index.cjs，不要手写 require 浏览器产物。
+ *
+ * DTS 用 tsconfig.build.json（含 ignoreDeprecations），避免 IDE 用旧 TS
+ * 时对主 tsconfig 报 Invalid value for ignoreDeprecations。
  */
 export default defineConfig([
   {
@@ -18,6 +21,7 @@ export default defineConfig([
     sourcemap: true,
     clean: true,
     external: ['svg-to-deck-converter'],
+    tsconfig: 'tsconfig.build.json',
   },
   {
     entry: { getDeckNodes: 'src/getDeckNodes.ts' },
@@ -29,5 +33,6 @@ export default defineConfig([
     clean: false,
     outExtension: () => ({ js: '.cjs' }),
     external: ['svg-to-deck-converter'],
+    tsconfig: 'tsconfig.build.json',
   },
 ]);

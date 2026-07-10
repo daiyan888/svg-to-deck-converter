@@ -4,7 +4,7 @@
  * 运行：npm run test:cjs
  *
  * 关键点：这里用 require('dist-use')，会走到 getDeckNodes.cjs，
- * 再由 svg-to-deck-converter 的 exports 选到 index.node.cjs。
+ * 再由 svg-to-deck-converter 的 exports 选到 dist/node/index.cjs。
  */
 const { getDeckNodes } = require('dist-use');
 

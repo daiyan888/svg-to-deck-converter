@@ -57,7 +57,7 @@ import { convertInfographicFromSyntax } from 'svg-to-deck-converter';
 import { DEFAULT_DECK_SIZE } from './defaults';
 ```
 
-不要手写 `./dist/index.node.js`。`package.json` 的 `exports.node` 会在 Node 下自动选：
+不要手写 `./dist/node/index.js`。`package.json` 的 `exports.node` 会在 Node 下自动选：
 
-- `import` → `index.node.js`
-- `require` → `index.node.cjs`
+- `import` → `dist/node/index.js`
+- `require` → `dist/node/index.cjs`

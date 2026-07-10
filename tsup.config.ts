@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { defineConfig, type Options } from 'tsup';
 
 const distDir = resolve(__dirname, 'dist');
+const browserOutDir = resolve(distDir, 'browser');
+const nodeOutDir = resolve(distDir, 'node');
 
 const shared: Options = {
   tsconfig: 'tsconfig.lib.json',
@@ -10,7 +12,6 @@ const shared: Options = {
   splitting: false,
   treeshake: true,
   noExternal: [/@antv\/infographic/],
-  outDir: 'dist',
 };
 
 const cjsOutExtension: NonNullable<Options['outExtension']> = () => ({ js: '.cjs' });
@@ -32,10 +33,23 @@ const nodeNoExternal = [
   'postcss',
 ] as const;
 
+function cleanNestedBuildArtifacts(outDir: string) {
+  for (const name of ['converter', 'gallery', 'types', 'stubs', 'theme']) {
+    rmSync(resolve(outDir, name), { recursive: true, force: true });
+  }
+}
+
+/**
+ * 产物目录：
+ *   dist/browser/index.js|cjs  — 浏览器
+ *   dist/node/index.js|cjs     — Node / SSR
+ *   dist/browser/index.d.ts    — 类型（两入口共用）
+ */
 export default defineConfig([
   {
     ...shared,
     entry: { index: 'src/index.ts' },
+    outDir: browserOutDir,
     format: ['esm'],
     platform: 'browser',
     clean: true,
@@ -44,15 +58,13 @@ export default defineConfig([
       options.alias = browserAlias;
     },
     async onSuccess() {
-      rmSync(resolve(distDir, 'converter'), { recursive: true, force: true });
-      rmSync(resolve(distDir, 'gallery'), { recursive: true, force: true });
-      rmSync(resolve(distDir, 'types'), { recursive: true, force: true });
-      rmSync(resolve(distDir, 'stubs'), { recursive: true, force: true });
+      cleanNestedBuildArtifacts(browserOutDir);
     },
   },
   {
     ...shared,
     entry: { index: 'src/index.ts' },
+    outDir: browserOutDir,
     format: ['cjs'],
     platform: 'browser',
     clean: false,
@@ -64,25 +76,27 @@ export default defineConfig([
   },
   {
     ...shared,
-    entry: { 'index.node': 'src/index.ts' },
+    entry: { index: 'src/index.ts' },
+    outDir: nodeOutDir,
     format: ['esm'],
     platform: 'node',
-    clean: false,
+    clean: true,
     dts: false,
-    // Bundle SSR runtime deps so copying only dist/ works without installing
-    // measury / linkedom / postcss in the consumer project.
     noExternal: [...nodeNoExternal],
-    // postcss 等 CJS 依赖会 require('path')；ESM 产物需注入 createRequire
     banner: {
       js: "import { createRequire as __svgToDeckCreateRequire } from 'node:module'; const require = __svgToDeckCreateRequire(import.meta.url);",
     },
     esbuildOptions(options) {
       options.alias = nodeAlias;
     },
+    async onSuccess() {
+      cleanNestedBuildArtifacts(nodeOutDir);
+    },
   },
   {
     ...shared,
-    entry: { 'index.node': 'src/index.ts' },
+    entry: { index: 'src/index.ts' },
+    outDir: nodeOutDir,
     format: ['cjs'],
     platform: 'node',
     clean: false,

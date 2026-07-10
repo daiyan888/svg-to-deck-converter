@@ -22,7 +22,7 @@ export interface GetDeckNodesResult {
 
 /**
  * 封装 convertInfographicFromSyntax，供上层项目调用。
- * Node 环境会通过 package exports 解析到 index.node.*。
+ * Node 环境会通过 package exports 解析到 dist/node/index.*。
  */
 export async function getDeckNodes(input: GetDeckNodesInput): Promise<GetDeckNodesResult> {
   const {
