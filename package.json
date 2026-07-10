@@ -3,19 +3,25 @@
   "version": "0.1.0",
   "description": "Render AntV Infographic Gallery templates with custom data and convert to TipTap deck JSON",
   "type": "module",
-  "main": "./dist/index.node.js",
+  "main": "./dist/index.node.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "browser": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "browser": "./dist/index.js",
+      "browser": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
       "node": {
         "import": "./dist/index.node.js",
+        "require": "./dist/index.node.cjs",
         "default": "./dist/index.node.js"
       },
       "import": "./dist/index.js",
+      "require": "./dist/index.node.cjs",
       "default": "./dist/index.node.js"
     }
   },

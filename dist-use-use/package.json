@@ -1,0 +1,13 @@
+{
+  "name": "dist-use-use",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:esm": "node run-esm.mjs",
+    "test:cjs": "node run-cjs.cjs",
+    "test": "npm run test:esm && npm run test:cjs"
+  },
+  "dependencies": {
+    "dist-use": "file:../dist-use"
+  }
+}
