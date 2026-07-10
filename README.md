@@ -8,7 +8,9 @@
 npm install svg-to-deck-converter @antv/infographic
 ```
 
-## 主 API
+## `convertInfographicToDeck`
+
+按 Gallery 类型 + 模板 + 数据渲染并转换。
 
 ```ts
 import { convertInfographicToDeck } from 'svg-to-deck-converter';
@@ -26,7 +28,30 @@ const { svg, document, stats } = await convertInfographicToDeck({
       { label: '2024年', value: 240, desc: '冲击新高', icon: 'lucide/trophy' },
     ],
   },
-  // 控制渲染尺寸（像素）。不传则默认 960 × 640
+  // AntV 渲染主题（影响 SDK 出图颜色）
+  theme: 'light',
+  themeConfig: {
+    palette: ['#2563EB', '#7C3AED', '#DB2777', '#EA580C', '#0891B2', '#16A34A'],
+  },
+  // 写入 document.attrs.theme；不传则按上面的 theme/palette 自动构建 clrScheme
+  deckTheme: {
+    clrScheme: {
+      name: 'Brand',
+      dk1: '#0F172A',
+      dk2: '#334155',
+      lt1: '#FFFFFF',
+      lt2: '#F1F5F9',
+      accent1: '#2563EB',
+      accent2: '#7C3AED',
+      accent3: '#DB2777',
+      accent4: '#EA580C',
+      accent5: '#0891B2',
+      accent6: '#16A34A',
+    },
+  },
+  // 将 fill/stroke 等映射为 accent1… 色槽，默认 true
+  mapColorsToThemeSlots: true,
+  useGalleryDefaults: true,
   width: 1200,
   height: 800,
   convertOptions: {
@@ -37,65 +62,46 @@ const { svg, document, stats } = await convertInfographicToDeck({
 });
 ```
 
-### 参数说明
+### 入参
 
 | 字段 | 说明 |
 |------|------|
 | `category` | Gallery 类型 ID，如 `chart-bar` |
 | `template` | 模板示例名（slug），如 `chart-bar-plain-text` |
 | `data` | Infographic 图表数据 |
-| `theme` | 可选，主题名称 |
+| `theme` | 可选，AntV 主题名（如 `light` / `dark`），影响 SDK 渲染 |
+| `themeConfig` | 可选，AntV `ThemeConfig`（如 `palette`、`colorPrimary`） |
+| `deckTheme` | 可选，写入 `document.attrs.theme`；不传则根据 AntV theme / palette 自动构建 `clrScheme` |
+| `mapColorsToThemeSlots` | 是否将渲染色映射为主题色槽（`accent1`…`dk1` 等），默认 `true`；`false` 时保留原始 hex |
 | `useGalleryDefaults` | 默认 `true`，从 Gallery 拉取示例的 theme / design 默认值 |
-| `convertOptions` | SVG → deck 转换选项，见下方说明 |
-| `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
-| `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
-| `width` | 可选，目标输出宽度（像素），默认 `960`。Infographic 固有 viewBox 会按此拉伸到 deck / SVG |
-| `height` | 可选，目标输出高度（像素），默认 `640`。同上 |
+| `convertOptions` | SVG → deck 转换选项，见下方 |
+| `offsetTop` | 所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先于 `convertOptions.offsetTop` |
+| `offsetLeft` | 所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先于 `convertOptions.offsetLeft` |
+| `width` | 目标输出宽度（像素），默认 `960` |
+| `height` | 目标输出高度（像素），默认 `640` |
+
+### `convertOptions`
+
+| 字段 | 说明 |
+|------|------|
+| `extractText` | 是否将 SVG 文本提取为 `multiBlockContainer`，默认 `true` |
+| `offsetTop` / `offsetLeft` | deckNode 偏移；若顶层也传了同名字段，以顶层为准 |
+| `defaultFontSize` | 默认字号，默认 `14` |
+| `defaultFontFamily` | 默认字体，默认 `sans-serif` |
 
 ### 返回值
 
 | 字段 | 说明 |
 |------|------|
-| `svg` | SDK 渲染出的 SVG 字符串（`width`/`height` 已写成目标像素，`viewBox` 仍为固有坐标系） |
-| `document` | TipTap deck JSON（按目标尺寸等比 `meet` 适配：文本位置与字号同步缩放并居中留白） |
-| `stats` | 转换统计（commands 数、text 节点数等） |
+| `svg` | SDK 渲染出的 SVG（`width`/`height` 已写成目标像素） |
+| `document` | TipTap deck JSON（含 `attrs.theme.clrScheme`） |
+| `stats` | 转换统计 |
 
-### 尺寸参数示例
+`document.attrs.theme.clrScheme` 含 `name`、`dk1`/`dk2`、`lt1`/`lt2`、`accent1`…`accent6`（及可选 `hlink`/`folHlink`）。开启 `mapColorsToThemeSlots` 后，palette 色写入 `accent1`…`accent6`，换主题只需改 `clrScheme` 色值。
 
-`width` / `height` 写在入参对象顶层，单位为像素。
+## `convertInfographicFromSyntax`
 
-说明：`@antv/infographic` 的 `width`/`height` 只影响显示容器，**不会改变模板固有 `viewBox`**。本库会在转换后把 deck 与 SVG 适配到你指定的目标宽高：保留原始 `viewBox`，使用与 SVG 默认相同的等比缩放（`preserveAspectRatio=meet`）+ 居中留白；文本节点的 `left`/`top`/`width`/`height` 与字号按同一比例缩放，保证与图形对齐。
-
-```ts
-// 默认尺寸：960 × 640（不传 width / height）
-await convertInfographicToDeck({
-  category: 'chart-bar',
-  template: 'chart-bar-plain-text',
-  data: { /* ... */ },
-});
-
-// 放大：1200 × 800（deckNode.width/height 会变成 1200/800）
-await convertInfographicToDeck({
-  category: 'chart-bar',
-  template: 'chart-bar-plain-text',
-  data: { /* ... */ },
-  width: 1200,
-  height: 800,
-});
-
-// 缩小：640 × 480
-await convertInfographicToDeck({
-  category: 'chart-bar',
-  template: 'chart-bar-plain-text',
-  data: { /* ... */ },
-  width: 640,
-  height: 480,
-});
-```
-
-## 从 Syntax 转换
-
-若已有完整的 Infographic Syntax 字符串（与 [Gallery 编辑器](https://infographic.antv.vision/gallery) 或 [信息图语法](https://infographic.antv.vision/learn/infographic-syntax) 相同），可直接渲染并转换：
+已有完整 Infographic Syntax（与 [Gallery 编辑器](https://infographic.antv.vision/gallery) 相同）时使用。
 
 ```ts
 import { convertInfographicFromSyntax } from 'svg-to-deck-converter';
@@ -114,20 +120,28 @@ data
       value 150
       desc 平台优化
       icon lucide/zap
-    - label 2023年
-      value 190
-      desc 全面增长
-      icon lucide/brain-circuit
-    - label 2024年
-      value 240
-      desc 冲击新高
-      icon lucide/trophy
 theme light
+  palette #2563EB #7C3AED #DB2777
 `.trim();
 
 const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
   syntax,
-  // 控制渲染尺寸（像素）。不传则默认 960 × 640
+  deckTheme: {
+    clrScheme: {
+      name: 'Brand',
+      dk1: '#0F172A',
+      dk2: '#334155',
+      lt1: '#FFFFFF',
+      lt2: '#F1F5F9',
+      accent1: '#2563EB',
+      accent2: '#7C3AED',
+      accent3: '#DB2777',
+      accent4: '#EA580C',
+      accent5: '#0891B2',
+      accent6: '#16A34A',
+    },
+  },
+  mapColorsToThemeSlots: true,
   width: 1200,
   height: 800,
   convertOptions: {
@@ -137,142 +151,42 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
   offsetLeft: 0,
 });
 
-// 也支持直接传入 syntax 字符串（此时无法传 width / height，会使用默认 960 × 640）
-// await convertInfographicFromSyntax(syntax, { extractText: true, offsetTop: 0, offsetLeft: 0 });
+// 简写：直接传 syntax 字符串（无法指定 width/height，默认 960×640）
+// await convertInfographicFromSyntax(syntax, { extractText: true });
 ```
 
-### 参数说明
+### 入参
 
 | 字段 | 说明 |
 |------|------|
 | `syntax` | 完整 Infographic Syntax 字符串 |
-| `convertOptions` | SVG → deck 转换选项，见下方说明 |
-| `offsetTop` | 可选，所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetTop` |
-| `offsetLeft` | 可选，所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0`；优先级高于 `convertOptions.offsetLeft` |
-| `width` | 可选，目标输出宽度（像素），默认 `960`。转换后会把 deck / SVG 拉伸到该尺寸 |
-| `height` | 可选，目标输出高度（像素），默认 `640`。同上 |
+| `deckTheme` | 可选，写入 `document.attrs.theme`；不传则根据 Syntax 中的 theme / palette 自动构建 |
+| `mapColorsToThemeSlots` | 是否映射主题色槽，默认 `true` |
+| `convertOptions` | 同 `convertInfographicToDeck` |
+| `offsetTop` / `offsetLeft` | 同 `convertInfographicToDeck` |
+| `width` / `height` | 目标尺寸，默认 `960` × `640` |
 
 ### 返回值
 
-与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告，无问题时为空数组）。
+与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告）。
 
-### 尺寸参数示例
-
-与 `convertInfographicToDeck` 相同：把 `width` / `height` 放在对象入参顶层，转换后 `deckNode` 会变成目标尺寸。若使用「直接传 syntax 字符串」的简写形式，则无法指定尺寸，会走默认 `960 × 640`。
-
-```ts
-// 默认尺寸：960 × 640
-await convertInfographicFromSyntax({
-  syntax,
-});
-
-// 放大：1440 × 900
-await convertInfographicFromSyntax({
-  syntax,
-  width: 1440,
-  height: 900,
-});
-
-// 缩小：480 × 360
-await convertInfographicFromSyntax({
-  syntax,
-  width: 480,
-  height: 360,
-});
-
-// ❌ 简写形式无法传尺寸，始终为默认 960 × 640
-await convertInfographicFromSyntax(syntax, { extractText: true });
-```
-
-## convertOptions
-
-`convertOptions` 用于控制 SVG → deck 的转换行为，适用于 `convertInfographicToDeck`、`convertInfographicFromSyntax` 和 `convertSvgToDeck`。
-
-| 字段 | 说明 |
-|------|------|
-| `extractText` | 是否将 SVG `<text>` / `<tspan>` 提取为 `multiBlockContainer`，默认 `true` |
-| `offsetTop` | 所有 `deckNode` 的 `top` 统一偏移（像素），默认 `0` |
-| `offsetLeft` | 所有 `deckNode` 的 `left` 统一偏移（像素），默认 `0` |
-| `defaultFontSize` | 文本提取时的默认字号，默认 `14` |
-| `defaultFontFamily` | 文本提取时的默认字体，默认 `sans-serif` |
-
-偏移会作用于 deck 下的**每一个** `deckNode`，包括 SVG 图形节点和提取出的文本节点。例如 `offsetTop: 100, offsetLeft: 50` 会将整张信息图整体下移 100px、右移 50px。
-
-在 `convertInfographicToDeck` / `convertInfographicFromSyntax` 中，顶层 `offsetTop` / `offsetLeft` 与 `convertOptions` 同时传入时，以顶层参数为准。
-
-## 其他 API
-
-```ts
-// 仅转换已有 SVG（同样支持 convertOptions.offsetTop / offsetLeft）
-import { convertSvgToDeck } from 'svg-to-deck-converter';
-
-const { document } = convertSvgToDeck(svgString, {
-  extractText: true,
-  offsetTop: 100,
-  offsetLeft: 50,
-});
-
-// 获取 Gallery 分类与模板列表
-import { getGalleryCategories } from 'svg-to-deck-converter';
-```
-
-## 本地开发（测试页面）
+## 本地开发
 
 ```bash
 npm install
-npm run dev
+npm run dev          # dev/ 测试页（含主题切换）
+npm run build
+npm run test:dist    # dist-test/ 基于 dist 的测试页
 ```
 
-`dev/` 目录是本地调试用的 React 页面，可交互测试模板选择、Syntax 编辑、SDK 预览与 TipTap 渲染。
-
-## 构建 npm 包
+## 构建
 
 ```bash
 npm run build
 ```
 
-会生成两份入口：
-
 | 文件 | 用途 |
 |------|------|
-| `dist/index.js` | 浏览器（Vite / Webpack `browser` 条件），用 DOM 渲染 Infographic |
-| `dist/index.node.js` | Node（`main` / `exports.node`），内含 `@antv/infographic/ssr` 及 `measury` / `linkedom` / `postcss` |
-| `dist/index.d.ts` | 类型声明（两份入口共用） |
-
-### 复制 dist 到其他项目时
-
-- **Node / 脚本 / 服务端**：必须引用 `index.node.js`，例如：
-
-```ts
-import { convertInfographicFromSyntax } from './vendor/svg-to-deck-converter/index.node.js';
-```
-
-- **浏览器**：引用 `index.js`。若误用 `index.js` 却在无 `document` 的环境调用 `convertInfographicFromSyntax`，会报 SSR 未包含在浏览器 bundle 中。
-
-通过 `npm install` 安装本包时，Node 会走 `exports.node` → `index.node.js`，打包工具的 `browser` 条件会走 `index.js`。
-
-## 项目结构
-
-```
-src/                  # npm 包源码
-├── index.ts          # 导出入口
-├── convert-infographic-to-deck.ts
-├── converter/        # SVG → deck JSON
-├── gallery/          # Gallery 模板与渲染
-└── types/
-
-dev/                  # 本地开发测试页面
-├── components/
-├── tiptap/
-└── renderer/
-```
-
-## deck JSON 结构
-
-```
-deck
-└── deckNode (width, height, top, left[, wrap])
-    ├── svg (commands[])
-    └── multiBlockContainer  ← 其父 deckNode 固定 wrap: false；字号为 pt（px×72/96）
-        └── paragraph → text + textStyle
-```
+| `dist/index.js` | 浏览器 |
+| `dist/index.node.js` | Node |
+| `dist/index.d.ts` | 类型声明 |

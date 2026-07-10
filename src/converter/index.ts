@@ -16,8 +16,11 @@ export type {
   ConvertOptions,
   ConvertResult,
   DeckDocument,
+  DeckDocumentAttrs,
   DeckNode,
   DeckNodeChild,
+  DeckTheme,
+  DeckThemeConfig,
   MultiBlockContainerNode,
   ParagraphNode,
   SvgNode,
@@ -25,4 +28,5 @@ export type {
   TextGradientColorMark,
   TextMark,
   TextStyleMark,
+  ThemeColorSlot,
 } from '../types/deck.js';

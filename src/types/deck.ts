@@ -85,8 +85,51 @@ export interface DeckNode {
   content: [DeckNodeChild];
 }
 
+/** PPT 风格主题色槽（对应 a:clrScheme） */
+export type ThemeColorSlot =
+  | 'dk1'
+  | 'dk2'
+  | 'lt1'
+  | 'lt2'
+  | 'accent1'
+  | 'accent2'
+  | 'accent3'
+  | 'accent4'
+  | 'accent5'
+  | 'accent6'
+  | 'hlink'
+  | 'folHlink';
+
+/** 主题色方案，颜色值为 CSS 色值（如 #4472C4） */
+export interface DeckTheme {
+  /** 主题名称，如 Office、自定义品牌名 */
+  name: string;
+  dk1: string;
+  dk2: string;
+  lt1: string;
+  lt2: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  accent4: string;
+  accent5: string;
+  accent6: string;
+  hlink?: string;
+  folHlink?: string;
+}
+
+/** deck.attrs.theme 结构 */
+export interface DeckThemeConfig {
+  clrScheme: DeckTheme;
+}
+
+export interface DeckDocumentAttrs {
+  theme: DeckThemeConfig;
+}
+
 export interface DeckDocument {
   type: 'deck';
+  attrs: DeckDocumentAttrs;
   content: DeckNode[];
 }
 
@@ -103,6 +146,16 @@ export interface ConvertOptions {
   defaultFontSize?: number;
   /** 默认字体 */
   defaultFontFamily?: string;
+  /**
+   * 写入 deck.attrs.theme；若同时开启 mapColorsToThemeSlots，会按此 clrScheme 做 hex→色槽映射。
+   * 不传则使用默认 Office 主题。
+   */
+  theme?: DeckThemeConfig;
+  /**
+   * 是否将 SVG / 文本中的颜色字面量映射为主题色槽（accent1…、dk1…），默认 false。
+   * 仅当提供了 theme（或 Infographic 路径自动构建了 theme）时才会生效。
+   */
+  mapColorsToThemeSlots?: boolean;
 }
 
 export interface ConvertResult {

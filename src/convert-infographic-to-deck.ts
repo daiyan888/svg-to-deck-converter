@@ -6,7 +6,8 @@ import { getCategoryId } from './gallery/categories.js';
 import { fetchGallerySyntax } from './gallery/fetch-gallery-syntax.js';
 import { renderInfographicSvg } from './gallery/render-gallery-svg.js';
 import { renderAndConvertFromSyntax } from './gallery/pipeline.js';
-import type { ConvertOptions, ConvertResult, DeckDocument } from './types/deck.js';
+import { buildDeckThemeFromInfographic } from './theme/build-theme-from-infographic.js';
+import type { ConvertOptions, ConvertResult, DeckDocument, DeckThemeConfig } from './types/deck.js';
 
 export interface ConvertInfographicInput {
   /** Gallery 类型 ID，如 chart-bar */
@@ -19,6 +20,15 @@ export interface ConvertInfographicInput {
   theme?: string;
   /** 额外主题配置 */
   themeConfig?: ThemeConfig;
+  /**
+   * 写入 deck.attrs.theme；不传则根据 AntV theme / themeConfig 自动构建 clrScheme。
+   */
+  deckTheme?: DeckThemeConfig;
+  /**
+   * 是否将渲染色映射为主题色槽，默认 true。
+   * 设为 false 时保留 SVG 原始 hex，仅写入 theme 表。
+   */
+  mapColorsToThemeSlots?: boolean;
   /** 是否从 Gallery 拉取示例默认 theme / design，默认 true */
   useGalleryDefaults?: boolean;
   /** SVG → deck 转换选项 */
@@ -43,6 +53,10 @@ export interface ConvertInfographicResult {
 export interface ConvertInfographicFromSyntaxInput {
   syntax: string;
   convertOptions?: ConvertOptions;
+  /** 写入 deck.attrs.theme；不传则根据 Syntax 中的 theme 自动构建 */
+  deckTheme?: DeckThemeConfig;
+  /** 是否将渲染色映射为主题色槽，默认 true */
+  mapColorsToThemeSlots?: boolean;
   /** 所有 deckNode 的 top 统一偏移（优先级高于 convertOptions.offsetTop） */
   offsetTop?: number;
   /** 所有 deckNode 的 left 统一偏移（优先级高于 convertOptions.offsetLeft） */
@@ -51,6 +65,27 @@ export interface ConvertInfographicFromSyntaxInput {
   width?: number;
   /** 渲染高度，默认 640 */
   height?: number;
+}
+
+function resolveThemeConvertOptions(
+  convertOptions: ConvertOptions | undefined,
+  renderTheme: string | undefined,
+  renderThemeConfig: ThemeConfig | undefined,
+  deckTheme: DeckThemeConfig | undefined,
+  mapColorsToThemeSlots: boolean | undefined,
+): ConvertOptions {
+  const theme =
+    deckTheme ??
+    buildDeckThemeFromInfographic({
+      theme: typeof renderTheme === 'string' ? renderTheme : undefined,
+      themeConfig: renderThemeConfig,
+    });
+
+  return {
+    ...convertOptions,
+    theme,
+    mapColorsToThemeSlots: mapColorsToThemeSlots ?? true,
+  };
 }
 
 function resolveConvertOptions(
@@ -126,8 +161,15 @@ export async function convertInfographicToDeck(
     size,
   );
 
-  const convertOptions = resolveConvertOptions(
+  const themeOptions = resolveThemeConvertOptions(
     input.convertOptions,
+    typeof renderOptions.theme === 'string' ? renderOptions.theme : undefined,
+    renderOptions.themeConfig,
+    input.deckTheme,
+    input.mapColorsToThemeSlots,
+  );
+  const convertOptions = resolveConvertOptions(
+    themeOptions,
     input.offsetTop,
     input.offsetLeft,
   );
@@ -154,14 +196,34 @@ export async function convertInfographicFromSyntax(
   convertOptions?: ConvertOptions,
 ): Promise<ConvertInfographicResult> {
   const syntax = typeof input === 'string' ? input : input.syntax;
-  const options =
-    typeof input === 'string'
-      ? convertOptions
-      : resolveConvertOptions(input.convertOptions, input.offsetTop, input.offsetLeft);
   const size =
     typeof input === 'string'
       ? {}
       : { width: input.width, height: input.height };
+
+  const parsed = parseSyntax(syntax.trim());
+  const themeOptions =
+    typeof input === 'string'
+      ? resolveThemeConvertOptions(
+          convertOptions,
+          typeof parsed.options.theme === 'string' ? parsed.options.theme : undefined,
+          parsed.options.themeConfig,
+          undefined,
+          undefined,
+        )
+      : resolveThemeConvertOptions(
+          input.convertOptions,
+          typeof parsed.options.theme === 'string' ? parsed.options.theme : undefined,
+          parsed.options.themeConfig,
+          input.deckTheme,
+          input.mapColorsToThemeSlots,
+        );
+
+  const options =
+    typeof input === 'string'
+      ? themeOptions
+      : resolveConvertOptions(themeOptions, input.offsetTop, input.offsetLeft);
+
   const pipeline = await renderAndConvertFromSyntax(syntax, options, size);
 
   return {

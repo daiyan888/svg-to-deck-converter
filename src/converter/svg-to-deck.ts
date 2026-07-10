@@ -1,14 +1,19 @@
 import { parseViewBox } from './transform-utils.js';
 import { extractTextDeckNodes } from './text-extractor.js';
 import { svgElementToCommands } from './svg-to-commands.js';
+import { buildColorSlotLookup } from '../theme/build-theme-from-infographic.js';
+import { DEFAULT_DECK_THEME_CONFIG } from '../theme/deck-theme.js';
+import { tokenizeDeckDocumentColors } from '../theme/tokenize-colors.js';
 import type { ConvertOptions, ConvertResult, DeckDocument, DeckNode, SvgNode } from '../types/deck.js';
 
-const DEFAULT_OPTIONS: Required<ConvertOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<ConvertOptions, 'theme'>> & Pick<ConvertOptions, 'theme'> = {
   offsetTop: 0,
   offsetLeft: 0,
   extractText: true,
   defaultFontSize: 14,
   defaultFontFamily: 'sans-serif',
+  theme: undefined,
+  mapColorsToThemeSlots: false,
 };
 
 function findSvgRoot(doc: Document): SVGSVGElement | null {
@@ -89,10 +94,19 @@ export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}
     }
   }
 
-  const document: DeckDocument = {
+  const theme = opts.theme ?? DEFAULT_DECK_THEME_CONFIG;
+  let document: DeckDocument = {
     type: 'deck',
+    attrs: {
+      theme,
+    },
     content: deckNodes,
   };
+
+  if (opts.mapColorsToThemeSlots) {
+    const lookup = buildColorSlotLookup(theme.clrScheme);
+    document = tokenizeDeckDocumentColors(document, lookup);
+  }
 
   return {
     document,

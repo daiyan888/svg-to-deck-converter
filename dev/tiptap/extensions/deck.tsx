@@ -1,5 +1,10 @@
 import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
+import {
+  DEFAULT_DECK_THEME_CONFIG,
+  buildClrSchemeCssVars,
+  type DeckThemeConfig,
+} from 'svg-to-deck-converter';
 
 function computeDeckBounds(node: NodeViewProps['node']): { width: number; height: number } {
   let width = 400;
@@ -15,11 +20,14 @@ function computeDeckBounds(node: NodeViewProps['node']): { width: number; height
 
 function DeckNodeView({ node }: NodeViewProps) {
   const { width, height } = computeDeckBounds(node);
+  const theme = (node.attrs.theme as DeckThemeConfig | null) ?? DEFAULT_DECK_THEME_CONFIG;
+  const cssVars = buildClrSchemeCssVars(theme.clrScheme);
 
   return (
     <NodeViewWrapper
       as="div"
       data-deck=""
+      data-theme-name={theme.clrScheme.name}
       style={{
         position: 'relative',
         width,
@@ -28,6 +36,7 @@ function DeckNodeView({ node }: NodeViewProps) {
         border: '1px dashed #d9d9d9',
         background: '#fafafa',
         boxSizing: 'border-box',
+        ...cssVars,
       }}
     >
       <NodeViewContent />
@@ -40,6 +49,31 @@ export const Deck = Node.create({
   group: 'block',
   content: 'deckNode+',
   defining: true,
+
+  addAttributes() {
+    return {
+      theme: {
+        default: DEFAULT_DECK_THEME_CONFIG,
+        parseHTML: (element) => {
+          const raw = element.getAttribute('data-theme');
+          if (!raw) {
+            return DEFAULT_DECK_THEME_CONFIG;
+          }
+          try {
+            return JSON.parse(raw) as DeckThemeConfig;
+          } catch {
+            return DEFAULT_DECK_THEME_CONFIG;
+          }
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.theme) {
+            return {};
+          }
+          return { 'data-theme': JSON.stringify(attributes.theme) };
+        },
+      },
+    };
+  },
 
   parseHTML() {
     return [{ tag: 'div[data-deck]' }];

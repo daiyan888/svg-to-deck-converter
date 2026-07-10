@@ -1,4 +1,14 @@
-import type { CommandsItem } from 'svg-to-deck-converter';
+import { toThemeCssValue, type CommandsItem } from 'svg-to-deck-converter';
+
+/** 可能携带主题色槽的 SVG 属性 */
+const COLOR_ATTRS = new Set([
+  'fill',
+  'stroke',
+  'stopColor',
+  'floodColor',
+  'lightingColor',
+  'color',
+]);
 
 const VOID_ELEMENTS = new Set([
   'path',
@@ -80,6 +90,13 @@ function attrsToString(attrs: Record<string, string | number | boolean>): string
     .join(' ');
 }
 
+function resolveColorAttr(key: string, value: string | number | boolean): string | number | boolean {
+  if (typeof value !== 'string' || !COLOR_ATTRS.has(key)) {
+    return value;
+  }
+  return toThemeCssValue(value);
+}
+
 function commandAttrs(item: CommandsItem): Record<string, string | number | boolean> {
   const attrs: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(item)) {
@@ -87,7 +104,7 @@ function commandAttrs(item: CommandsItem): Record<string, string | number | bool
       continue;
     }
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      attrs[key] = value;
+      attrs[key] = resolveColorAttr(key, value);
     }
   }
   return attrs;

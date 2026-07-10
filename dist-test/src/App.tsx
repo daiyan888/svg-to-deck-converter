@@ -1,9 +1,28 @@
 import { useCallback, useMemo, useState } from 'react';
-import { convertSvgToDeck, renderAndConvertFromSyntax } from '../../dist/index.js';
-import type { ConvertResult } from '../../dist/index.js';
+import {
+  convertInfographicFromSyntax,
+  convertSvgToDeck,
+  type ConvertResult,
+  type DeckDocument,
+  type DeckTheme,
+  type ThemeColorSlot,
+} from '../../dist/index.js';
+import { DeckPreview } from './deck-preview';
 import { GalleryPicker } from './gallery-picker';
 import type { GalleryTemplatePayload } from './gallery-picker';
 import { SAMPLE_SVG } from './sample-svg';
+import { THEME_PRESETS, toThemeConfig, type ThemePreset } from './theme-presets';
+import { ThemeSwitcher } from './theme-switcher';
+
+function withClrScheme(document: DeckDocument, clrScheme: DeckTheme): DeckDocument {
+  return {
+    ...document,
+    attrs: {
+      ...document.attrs,
+      theme: { clrScheme },
+    },
+  };
+}
 
 export function App() {
   const [svgInput, setSvgInput] = useState(SAMPLE_SVG);
@@ -14,10 +33,12 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [extractText, setExtractText] = useState(true);
+  const [mapColorsToThemeSlots, setMapColorsToThemeSlots] = useState(true);
   const [offsetTop, setOffsetTop] = useState(0);
   const [offsetLeft, setOffsetLeft] = useState(0);
   const [width, setWidth] = useState(960);
   const [height, setHeight] = useState(640);
+  const [overrideClrScheme, setOverrideClrScheme] = useState<DeckTheme | null>(null);
 
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
@@ -26,24 +47,45 @@ export function App() {
 
   const renderSize = useMemo(() => ({ width, height }), [width, height]);
 
+  const previewDocument = useMemo(() => {
+    if (!result?.document) {
+      return null;
+    }
+    if (!overrideClrScheme) {
+      return result.document;
+    }
+    return withClrScheme(result.document, overrideClrScheme);
+  }, [result, overrideClrScheme]);
+
+  const activeClrScheme = previewDocument?.attrs?.theme?.clrScheme ?? null;
+
+  const applyResult = useCallback((converted: ConvertResult) => {
+    setResult(converted);
+    setOverrideClrScheme(null);
+  }, []);
+
   const jsonOutput = useMemo(() => {
-    if (!result) {
+    if (!previewDocument) {
       return '';
     }
-    return JSON.stringify(result.document, null, 2);
-  }, [result]);
+    return JSON.stringify(previewDocument, null, 2);
+  }, [previewDocument]);
 
   const handleConvertSvg = useCallback(() => {
     try {
       setError(null);
       setRenderedSvg(svgInput);
-      const converted = convertSvgToDeck(svgInput, convertOptions);
-      setResult(converted);
+      const converted = convertSvgToDeck(svgInput, {
+        ...convertOptions,
+        mapColorsToThemeSlots,
+        theme: toThemeConfig(THEME_PRESETS[1].clrScheme),
+      });
+      applyResult(converted);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [convertOptions, svgInput]);
+  }, [applyResult, convertOptions, mapColorsToThemeSlots, svgInput]);
 
   const handleTemplateLoaded = useCallback((payload: GalleryTemplatePayload) => {
     setSyntaxInput(payload.syntax);
@@ -51,6 +93,7 @@ export function App() {
     setRenderedSvg(payload.svg);
     setSelectedTemplate(payload.selection.slug);
     setResult(null);
+    setOverrideClrScheme(null);
     setError(null);
   }, []);
 
@@ -62,17 +105,36 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions, renderSize);
+      const pipeline = await convertInfographicFromSyntax({
+        syntax: syntaxInput,
+        convertOptions,
+        mapColorsToThemeSlots,
+        width: renderSize.width,
+        height: renderSize.height,
+        offsetTop,
+        offsetLeft,
+      });
       setRenderedSvg(pipeline.svg);
       setSvgInput(pipeline.svg);
-      setResult(pipeline.result);
+      applyResult({
+        document: pipeline.document,
+        stats: pipeline.stats,
+      });
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [convertOptions, renderSize, syntaxInput]);
+  }, [
+    applyResult,
+    convertOptions,
+    mapColorsToThemeSlots,
+    offsetLeft,
+    offsetTop,
+    renderSize,
+    syntaxInput,
+  ]);
 
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
@@ -80,6 +142,44 @@ export function App() {
     }
     await navigator.clipboard.writeText(jsonOutput);
   }, [jsonOutput]);
+
+  const handleSelectPreset = useCallback((preset: ThemePreset) => {
+    setOverrideClrScheme(preset.clrScheme);
+    setResult((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        document: withClrScheme(prev.document, preset.clrScheme),
+      };
+    });
+  }, []);
+
+  const handleSlotChange = useCallback(
+    (slot: ThemeColorSlot, color: string) => {
+      setOverrideClrScheme((prev) => {
+        const base =
+          prev ?? result?.document.attrs?.theme?.clrScheme ?? THEME_PRESETS[0].clrScheme;
+        const next: DeckTheme = {
+          ...base,
+          name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
+          [slot]: color,
+        };
+        setResult((current) => {
+          if (!current) {
+            return current;
+          }
+          return {
+            ...current,
+            document: withClrScheme(current.document, next),
+          };
+        });
+        return next;
+      });
+    },
+    [result],
+  );
 
   return (
     <div className="page">
@@ -99,6 +199,14 @@ export function App() {
               onChange={(e) => setExtractText(e.target.checked)}
             />
             提取 text 为 multiBlockContainer
+          </label>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={mapColorsToThemeSlots}
+              onChange={(e) => setMapColorsToThemeSlots(e.target.checked)}
+            />
+            映射主题色槽
           </label>
           <label className="numberField">
             offsetTop
@@ -142,141 +250,174 @@ export function App() {
       </header>
 
       <div className="pageTop">
-      <GalleryPicker onTemplateLoaded={handleTemplateLoaded} onError={setError} />
+        <GalleryPicker onTemplateLoaded={handleTemplateLoaded} onError={setError} />
 
-      <div className="toolbar">
-        <button type="button" onClick={handleConvertSvg}>
-          convertSvgToDeck
-        </button>
-        <button type="button" onClick={() => void handleRenderAndConvert()} disabled={loading}>
-          renderAndConvertFromSyntax
-        </button>
-        {result && (
-          <button type="button" className="secondary" onClick={() => void handleCopyJson()}>
-            复制 JSON
+        <div className="toolbar">
+          <button type="button" onClick={handleConvertSvg}>
+            convertSvgToDeck
           </button>
+          <button type="button" onClick={() => void handleRenderAndConvert()} disabled={loading}>
+            convertInfographicFromSyntax
+          </button>
+          {result && (
+            <button type="button" className="secondary" onClick={() => void handleCopyJson()}>
+              复制 JSON
+            </button>
+          )}
+        </div>
+
+        <ThemeSwitcher
+          clrScheme={activeClrScheme}
+          onSelectPreset={handleSelectPreset}
+          onSlotChange={handleSlotChange}
+          disabled={!result}
+        />
+
+        <div className="apiDocs">
+          <section className="apiCard">
+            <h3 className="apiName">convertSvgToDeck</h3>
+            <p className="apiDesc">
+              将左侧 SVG 字符串转为 TipTap deck JSON（同步）。开启「映射主题色槽」时用 AntV 预设做 hex→色槽。
+            </p>
+            <dl className="apiList">
+              <div>
+                <dt>入参</dt>
+                <dd>
+                  <code>svgString: string</code> — 左侧「SVG 输入」文本框内容
+                </dd>
+                <dd>
+                  <code>convertOptions?: ConvertOptions</code> — 含
+                  <code>extractText</code>、<code>offsetTop</code>、<code>offsetLeft</code>、
+                  <code>mapColorsToThemeSlots</code>、<code>theme</code>
+                </dd>
+              </div>
+              <div>
+                <dt>返回</dt>
+                <dd>
+                  <code>ConvertResult</code>
+                  <ul>
+                    <li>
+                      <code>document</code> — deck JSON（含 <code>attrs.theme.clrScheme</code>）
+                    </li>
+                    <li>
+                      <code>stats</code> — command / text / skipped 统计
+                    </li>
+                  </ul>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="apiCard">
+            <h3 className="apiName">convertInfographicFromSyntax</h3>
+            <p className="apiDesc">
+              解析 Syntax → SDK 渲染 SVG → 转换 deck；默认按 AntV palette 构建 clrScheme 并映射色槽。
+            </p>
+            <dl className="apiList">
+              <div>
+                <dt>入参</dt>
+                <dd>
+                  <code>syntax</code> / <code>convertOptions</code> / <code>mapColorsToThemeSlots</code>
+                </dd>
+                <dd>
+                  <code>width</code> / <code>height</code> — 页头尺寸
+                </dd>
+              </div>
+              <div>
+                <dt>返回</dt>
+                <dd>
+                  <code>Promise&lt;ConvertInfographicResult&gt;</code>
+                  <ul>
+                    <li>
+                      <code>svg</code> — SDK 渲染 SVG
+                    </li>
+                    <li>
+                      <code>document</code> — deck JSON
+                    </li>
+                    <li>
+                      <code>warnings</code> — Syntax 警告
+                    </li>
+                  </ul>
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+
+        {error && <div className="error">{error}</div>}
+
+        {result && (
+          <div className="stats">
+            commands: {result.stats.commandCount} · text nodes: {result.stats.textNodeCount}
+            {result.stats.skippedNodes.length > 0 && (
+              <span> · skipped: {result.stats.skippedNodes.length}</span>
+            )}
+            {mapColorsToThemeSlots && <span> · 色槽映射已开启</span>}
+          </div>
         )}
       </div>
 
-      <div className="apiDocs">
-        <section className="apiCard">
-          <h3 className="apiName">convertSvgToDeck</h3>
-          <p className="apiDesc">将左侧 SVG 字符串转为 TipTap deck JSON（同步，不经过 Infographic SDK 渲染）。</p>
-          <dl className="apiList">
-            <div>
-              <dt>入参</dt>
-              <dd>
-                <code>svgString: string</code> — 左侧「SVG 输入」文本框内容
-              </dd>
-              <dd>
-                <code>convertOptions?: ConvertOptions</code> — 页头选项：
-                <code>extractText</code>、<code>offsetTop</code>、<code>offsetLeft</code>
-                （另有 <code>defaultFontSize</code>、<code>defaultFontFamily</code> 默认值）
-              </dd>
-            </div>
-            <div>
-              <dt>返回</dt>
-              <dd>
-                <code>ConvertResult</code>
-                <ul>
-                  <li><code>document</code> — deck JSON（显示在「deck JSON 输出」）</li>
-                  <li><code>stats.commandCount</code> — SVG 绘图命令数</li>
-                  <li><code>stats.textNodeCount</code> — 提取的文本节点数</li>
-                  <li><code>stats.skippedNodes</code> — 跳过的 SVG 节点 id 列表</li>
-                </ul>
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="apiCard">
-          <h3 className="apiName">renderAndConvertFromSyntax</h3>
-          <p className="apiDesc">
-            解析 Infographic Syntax → @antv/infographic SDK 渲染 SVG → 再调用 convertSvgToDeck（异步流水线）。
-          </p>
-          <dl className="apiList">
-            <div>
-              <dt>入参</dt>
-              <dd>
-                <code>syntax: string</code> — 右侧「Infographic Syntax」文本框内容
-              </dd>
-              <dd>
-                <code>convertOptions?: ConvertOptions</code> — 同上
-              </dd>
-              <dd>
-                <code>size?: {'{'} width?, height? {'}'}</code> — 页头
-                <code>width</code> / <code>height</code>（默认 960 × 640）
-              </dd>
-            </div>
-            <div>
-              <dt>返回</dt>
-              <dd>
-                <code>Promise&lt;PipelineResult&gt;</code>
-                <ul>
-                  <li><code>svg</code> — SDK 渲染出的 SVG（更新左侧输入与「SVG 预览」）</li>
-                  <li><code>result</code> — 同上 <code>ConvertResult</code></li>
-                  <li><code>warnings</code> — Syntax 解析警告（非致命，无问题时为空数组）</li>
-                </ul>
-              </dd>
-            </div>
-          </dl>
-        </section>
-      </div>
-
-      {error && <div className="error">{error}</div>}
-
-      {result && (
-        <div className="stats">
-          commands: {result.stats.commandCount} · text nodes: {result.stats.textNodeCount}
-          {result.stats.skippedNodes.length > 0 && (
-            <span> · skipped: {result.stats.skippedNodes.length}</span>
-          )}
-        </div>
-      )}
-      </div>
-
       <div className="workArea">
-      <div className="grid">
-        <section className="panel">
-          <h2>SVG 输入</h2>
-          <textarea
-            value={svgInput}
-            onChange={(e) => setSvgInput(e.target.value)}
-            spellCheck={false}
-          />
-        </section>
+        <div className="grid">
+          <section className="panel">
+            <h2>SVG 输入</h2>
+            <textarea
+              value={svgInput}
+              onChange={(e) => setSvgInput(e.target.value)}
+              spellCheck={false}
+            />
+          </section>
 
-        <section className="panel">
+          <section className="panel">
+            <h2>
+              Infographic Syntax
+              {selectedTemplate && <span className="panelHint"> · {selectedTemplate}</span>}
+            </h2>
+            <textarea
+              value={syntaxInput}
+              onChange={(e) => setSyntaxInput(e.target.value)}
+              spellCheck={false}
+              placeholder="从上方 Gallery 选择器加载，或手动粘贴 syntax"
+            />
+          </section>
+        </div>
+
+        <div className="grid">
+          <section className="panel preview">
+            <h2>SVG 预览（原始渲染）</h2>
+            <div className="previewBox">
+              {renderedSvg ? (
+                <div className="svgMount" dangerouslySetInnerHTML={{ __html: renderedSvg }} />
+              ) : (
+                <span className="placeholder">转换后显示 SVG</span>
+              )}
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>deck JSON 输出</h2>
+            <textarea value={jsonOutput} readOnly spellCheck={false} placeholder="转换结果" />
+          </section>
+        </div>
+
+        <section className="panel deckPreviewPanel">
           <h2>
-            Infographic Syntax
-            {selectedTemplate && <span className="panelHint"> · {selectedTemplate}</span>}
+            Deck 主题预览
+            {activeClrScheme && (
+              <span className="panelHint"> · {activeClrScheme.name}</span>
+            )}
           </h2>
-          <textarea
-            value={syntaxInput}
-            onChange={(e) => setSyntaxInput(e.target.value)}
-            spellCheck={false}
-            placeholder="从上方 Gallery 选择器加载，或手动粘贴 syntax"
-          />
-        </section>
-      </div>
-
-      <div className="grid">
-        <section className="panel preview">
-          <h2>SVG 预览</h2>
-          <div className="previewBox">
-            {renderedSvg ? (
-              <div className="svgMount" dangerouslySetInnerHTML={{ __html: renderedSvg }} />
+          <div className="previewBox deckPreviewBox">
+            {previewDocument ? (
+              <DeckPreview
+                key={`${previewDocument.attrs.theme.clrScheme.name}-${previewDocument.attrs.theme.clrScheme.accent1}`}
+                document={previewDocument}
+              />
             ) : (
-              <span className="placeholder">转换后显示 SVG</span>
+              <span className="placeholder">转换后可切换主题色查看色槽渲染</span>
             )}
           </div>
         </section>
-
-        <section className="panel">
-          <h2>deck JSON 输出</h2>
-          <textarea value={jsonOutput} readOnly spellCheck={false} placeholder="转换结果" />
-        </section>
-      </div>
       </div>
     </div>
   );

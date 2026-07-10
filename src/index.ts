@@ -28,8 +28,11 @@ export type {
   ConvertOptions,
   ConvertResult,
   DeckDocument,
+  DeckDocumentAttrs,
   DeckNode,
   DeckNodeChild,
+  DeckTheme,
+  DeckThemeConfig,
   MultiBlockContainerNode,
   ParagraphNode,
   SvgNode,
@@ -37,7 +40,29 @@ export type {
   TextGradientColorMark,
   TextMark,
   TextStyleMark,
+  ThemeColorSlot,
 } from './types/deck.js';
+
+export {
+  DEFAULT_DECK_THEME,
+  DEFAULT_DECK_THEME_CONFIG,
+  THEME_COLOR_SLOTS,
+  buildClrSchemeCssVars,
+  isThemeColorSlot,
+  resolveThemeColor,
+  toThemeCssValue,
+} from './theme/deck-theme.js';
+export {
+  buildColorSlotLookup,
+  buildDeckThemeFromInfographic,
+  resolvePaletteColors,
+} from './theme/build-theme-from-infographic.js';
+export {
+  mapColorToSlot,
+  mapColorsInCssValue,
+  tokenizeDeckDocumentColors,
+} from './theme/tokenize-colors.js';
+export { normalizeColor, normalizeColorHex } from './theme/color-normalize.js';
 
 export {
   GALLERY_TEMPLATE_COUNT,

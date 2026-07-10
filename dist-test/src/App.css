@@ -336,6 +336,144 @@ button.secondary:hover {
   font-size: 0.875rem;
 }
 
+.themeSwitcher {
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.themeSwitcherHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.themeSwitcherTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.themeSwitcherName {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.themePresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.themePresetBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.themePresetBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.themePresetBtnActive {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.themePresetSwatches {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.themePresetDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.themeSlots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.themeSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+}
+
+.themeSlotName {
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  color: #64748b;
+}
+
+.themeSlotControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.themeColorInput {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.themeColorInput:disabled {
+  cursor: not-allowed;
+}
+
+.themeSlotHex {
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.themeHint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.deckPreviewPanel {
+  min-height: 320px;
+  flex: 0 0 auto;
+}
+
+.deckPreviewBox {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 12px;
+  overflow: auto;
+}
+
+.deckPreview {
+  transform-origin: top left;
+}
+
 @media (max-width: 900px) {
   .galleryPickerFields {
     grid-template-columns: 1fr;

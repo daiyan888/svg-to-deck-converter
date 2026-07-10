@@ -1,4 +1,10 @@
-import type { DeckDocument, DeckNode, DeckNodeChild } from 'svg-to-deck-converter';
+import {
+  DEFAULT_DECK_THEME_CONFIG,
+  buildClrSchemeCssVars,
+  type DeckDocument,
+  type DeckNode,
+  type DeckNodeChild,
+} from 'svg-to-deck-converter';
 import { MultiBlockContainerRenderer } from './multi-block-container-renderer';
 import { SvgFromCommands } from './svg-from-commands';
 import styles from './deck-renderer.module.css';
@@ -40,11 +46,14 @@ interface DeckRendererProps {
 export function DeckRenderer({ document, className }: DeckRendererProps) {
   const maxWidth = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
   const maxHeight = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
+  const theme = document.attrs?.theme ?? DEFAULT_DECK_THEME_CONFIG;
+  const cssVars = buildClrSchemeCssVars(theme.clrScheme);
 
   return (
     <div
       className={`${styles.deck} ${className ?? ''}`}
-      style={{ width: maxWidth, height: maxHeight }}
+      data-theme-name={theme.clrScheme.name}
+      style={{ width: maxWidth, height: maxHeight, ...cssVars }}
     >
       {document.content.map((node, i) => renderDeckNode(node, i))}
     </div>

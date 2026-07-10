@@ -1,16 +1,35 @@
 import { useCallback, useMemo, useState } from 'react';
-import { convertSvgToDeck, fetchGallerySyntax, renderAndConvertFromSyntax } from 'svg-to-deck-converter';
-import type { ConvertResult } from 'svg-to-deck-converter';
+import {
+  convertInfographicFromSyntax,
+  convertSvgToDeck,
+  fetchGallerySyntax,
+  type ConvertResult,
+  type DeckDocument,
+  type DeckTheme,
+  type ThemeColorSlot,
+} from 'svg-to-deck-converter';
 import { computeDeckSize, DeckEditor } from '../tiptap/deck-editor';
 import { GalleryPicker } from './gallery-picker';
 import { InfographicSdkPreview } from './infographic-sdk-preview';
+import { ThemeSwitcher } from './theme-switcher';
 import { ZoomableViewport } from './zoomable-viewport';
 import { SAMPLE_SVG } from '../samples/default-svg';
+import { THEME_PRESETS, toThemeConfig, type ThemePreset } from '../theme/presets';
 import styles from './converter-panel.module.css';
 
 const DEFAULT_TEMPLATE = 'chart-bar-plain-text';
 const DEFAULT_RENDER_WIDTH = 960;
 const DEFAULT_RENDER_HEIGHT = 640;
+
+function withClrScheme(document: DeckDocument, clrScheme: DeckTheme): DeckDocument {
+  return {
+    ...document,
+    attrs: {
+      ...document.attrs,
+      theme: { clrScheme },
+    },
+  };
+}
 
 export function ConverterPanel() {
   const [syntaxInput, setSyntaxInput] = useState('');
@@ -19,6 +38,7 @@ export function ConverterPanel() {
   const [syntaxWarnings, setSyntaxWarnings] = useState<string | null>(null);
   const [result, setResult] = useState<ConvertResult | null>(null);
   const [extractText, setExtractText] = useState(true);
+  const [mapColorsToThemeSlots, setMapColorsToThemeSlots] = useState(true);
   const [offsetTop, setOffsetTop] = useState(0);
   const [offsetLeft, setOffsetLeft] = useState(0);
   const [renderWidth, setRenderWidth] = useState(DEFAULT_RENDER_WIDTH);
@@ -26,6 +46,8 @@ export function ConverterPanel() {
   const [rendering, setRendering] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE);
   const [sdkPreviewSyntax, setSdkPreviewSyntax] = useState('');
+  /** 预览覆盖主题；null 表示使用转换结果自带的 clrScheme */
+  const [overrideClrScheme, setOverrideClrScheme] = useState<DeckTheme | null>(null);
 
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
@@ -40,30 +62,52 @@ export function ConverterPanel() {
     [renderWidth, renderHeight],
   );
 
+  const previewDocument = useMemo(() => {
+    if (!result?.document) {
+      return null;
+    }
+    if (!overrideClrScheme) {
+      return result.document;
+    }
+    return withClrScheme(result.document, overrideClrScheme);
+  }, [result, overrideClrScheme]);
+
+  const activeClrScheme = previewDocument?.attrs?.theme?.clrScheme ?? null;
+
+  const applyResult = useCallback((converted: ConvertResult) => {
+    setResult(converted);
+    setOverrideClrScheme(null);
+  }, []);
+
   const handleConvert = useCallback(() => {
     try {
       setError(null);
-      const converted = convertSvgToDeck(svgInput, convertOptions);
-      setResult(converted);
+      // 用 AntV 预设做 hex→色槽映射；预览换色由 ThemeSwitcher 只改 clrScheme
+      const converted = convertSvgToDeck(svgInput, {
+        ...convertOptions,
+        mapColorsToThemeSlots,
+        theme: toThemeConfig(THEME_PRESETS[1].clrScheme),
+      });
+      applyResult(converted);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [svgInput, convertOptions]);
+  }, [svgInput, convertOptions, mapColorsToThemeSlots, applyResult]);
 
   const jsonOutput = useMemo(() => {
-    if (!result) {
+    if (!previewDocument) {
       return '';
     }
-    return JSON.stringify(result.document, null, 2);
-  }, [result]);
+    return JSON.stringify(previewDocument, null, 2);
+  }, [previewDocument]);
 
   const compressedJsonOutput = useMemo(() => {
-    if (!result) {
+    if (!previewDocument) {
       return '';
     }
-    return JSON.stringify(result.document);
-  }, [result]);
+    return JSON.stringify(previewDocument);
+  }, [previewDocument]);
 
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
@@ -83,22 +127,27 @@ export function ConverterPanel() {
     setError(null);
     setSyntaxWarnings(null);
     setResult(null);
+    setOverrideClrScheme(null);
     setSelectedTemplate(DEFAULT_TEMPLATE);
 
     try {
       const syntax = await fetchGallerySyntax(DEFAULT_TEMPLATE);
       setSyntaxInput(syntax);
       setSdkPreviewSyntax(syntax);
-      const converted = convertSvgToDeck(SAMPLE_SVG, convertOptions);
+      const converted = convertSvgToDeck(SAMPLE_SVG, {
+        ...convertOptions,
+        mapColorsToThemeSlots,
+        theme: toThemeConfig(THEME_PRESETS[1].clrScheme),
+      });
       setSvgInput(SAMPLE_SVG);
-      setResult(converted);
+      applyResult(converted);
     } catch (e) {
       setSyntaxInput('');
       setSdkPreviewSyntax('');
       setSvgInput(SAMPLE_SVG);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [convertOptions]);
+  }, [convertOptions, mapColorsToThemeSlots, applyResult]);
 
   const handleTemplateLoaded = useCallback(
     (payload: { svg: string; syntax: string; selection: { slug: string } }) => {
@@ -106,6 +155,7 @@ export function ConverterPanel() {
       setSdkPreviewSyntax(payload.syntax);
       setSvgInput(payload.svg);
       setResult(null);
+      setOverrideClrScheme(null);
       setError(null);
       setSyntaxWarnings(null);
       setSelectedTemplate(payload.selection.slug);
@@ -119,10 +169,23 @@ export function ConverterPanel() {
     setSyntaxWarnings(null);
 
     try {
-      const pipeline = await renderAndConvertFromSyntax(syntaxInput, convertOptions, renderSize);
+      // 不传 deckTheme：按 AntV theme/palette 建 clrScheme 并映射色槽；
+      // 之后用 ThemeSwitcher 只改色值，色槽引用不变即可换主题。
+      const pipeline = await convertInfographicFromSyntax({
+        syntax: syntaxInput,
+        convertOptions,
+        mapColorsToThemeSlots,
+        width: renderSize.width,
+        height: renderSize.height,
+        offsetTop,
+        offsetLeft,
+      });
       setSdkPreviewSyntax(syntaxInput);
       setSvgInput(pipeline.svg);
-      setResult(pipeline.result);
+      applyResult({
+        document: pipeline.document,
+        stats: pipeline.stats,
+      });
 
       if (pipeline.warnings.length > 0) {
         setSyntaxWarnings(
@@ -137,7 +200,52 @@ export function ConverterPanel() {
     } finally {
       setRendering(false);
     }
-  }, [convertOptions, renderSize, syntaxInput]);
+  }, [
+    convertOptions,
+    mapColorsToThemeSlots,
+    offsetLeft,
+    offsetTop,
+    renderSize,
+    syntaxInput,
+    applyResult,
+  ]);
+
+  const handleSelectPreset = useCallback((preset: ThemePreset) => {
+    setOverrideClrScheme(preset.clrScheme);
+    setResult((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        document: withClrScheme(prev.document, preset.clrScheme),
+      };
+    });
+  }, []);
+
+  const handleSlotChange = useCallback((slot: ThemeColorSlot, color: string) => {
+    setOverrideClrScheme((prev) => {
+      const base =
+        prev ??
+        result?.document.attrs?.theme?.clrScheme ??
+        THEME_PRESETS[0].clrScheme;
+      const next: DeckTheme = {
+        ...base,
+        name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
+        [slot]: color,
+      };
+      setResult((current) => {
+        if (!current) {
+          return current;
+        }
+        return {
+          ...current,
+          document: withClrScheme(current.document, next),
+        };
+      });
+      return next;
+    });
+  }, [result]);
 
   return (
     <div className={styles.layout}>
@@ -175,6 +283,14 @@ export function ConverterPanel() {
             onChange={(e) => setExtractText(e.target.checked)}
           />
           提取 &lt;text&gt; 为 multiBlockContainer
+        </label>
+        <label className={styles.checkbox}>
+          <input
+            type="checkbox"
+            checked={mapColorsToThemeSlots}
+            onChange={(e) => setMapColorsToThemeSlots(e.target.checked)}
+          />
+          映射主题色槽
         </label>
         <label className={styles.numberField}>
           offsetTop
@@ -230,6 +346,13 @@ export function ConverterPanel() {
         </button>
       </div>
 
+      <ThemeSwitcher
+        clrScheme={activeClrScheme}
+        onSelectPreset={handleSelectPreset}
+        onSlotChange={handleSlotChange}
+        disabled={!result}
+      />
+
       {syntaxWarnings && <div className={styles.warning}>{syntaxWarnings}</div>}
 
       <div className={styles.row}>
@@ -275,6 +398,7 @@ export function ConverterPanel() {
               {result.stats.skippedNodes.length > 0 && (
                 <span> · 警告: {result.stats.skippedNodes.length}</span>
               )}
+              {mapColorsToThemeSlots && <span> · 色槽映射已开启</span>}
             </div>
           )}
           <textarea
@@ -295,13 +419,16 @@ export function ConverterPanel() {
 
         <section className={`${styles.panel} ${styles.previewPanel}`}>
           <h2 className={styles.panelTitle}>TipTap 渲染预览</h2>
-          {result?.document ? (
+          {previewDocument ? (
             <ZoomableViewport
-              contentWidth={computeDeckSize(result.document).width}
-              contentHeight={computeDeckSize(result.document).height}
+              contentWidth={computeDeckSize(previewDocument).width}
+              contentHeight={computeDeckSize(previewDocument).height}
               defaultScale={0.55}
             >
-              <DeckEditor document={result.document} />
+              <DeckEditor
+                key={`${previewDocument.attrs.theme.clrScheme.name}-${previewDocument.attrs.theme.clrScheme.accent1}`}
+                document={previewDocument}
+              />
             </ZoomableViewport>
           ) : (
             <DeckEditor document={null} />
