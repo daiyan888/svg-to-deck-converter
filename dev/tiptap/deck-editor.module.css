@@ -13,6 +13,19 @@
   min-height: 0;
 }
 
+/* 悬停预览字号 / 颜色：覆盖 TipTap mark 内联样式，不改文档 */
+.deckEditor[data-preview-font-size] :global([data-text-style]) {
+  font-size: var(--deck-preview-font-size) !important;
+}
+
+.deckEditor[data-preview-text-color] :global([data-text-gradient-color]) {
+  color: var(--deck-preview-text-color) !important;
+  -webkit-text-fill-color: var(--deck-preview-text-color) !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+}
+
 .empty {
   display: flex;
   align-items: center;

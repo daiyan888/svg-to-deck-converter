@@ -15,16 +15,28 @@ const SWATCH_SLOTS: ThemeColorSlot[] = [
 ];
 
 interface ThemeSwitcherProps {
+  /** 已落盘的 clrScheme（来自 deck.attrs.theme） */
   clrScheme?: DeckTheme | null;
+  /** 点击预设：写入数据结构 */
   onSelectPreset: (preset: ThemePreset) => void;
+  /** 悬停预设：仅预览，不改数据 */
+  onPreviewPreset?: (preset: ThemePreset) => void;
+  /** 离开预设 / 结束预览 */
+  onPreviewEnd?: () => void;
+  /** 色槽取色确认：写入数据结构 */
   onSlotChange?: (slot: ThemeColorSlot, color: string) => void;
+  /** 色槽拖动中：仅预览 */
+  onSlotPreview?: (slot: ThemeColorSlot, color: string) => void;
   disabled?: boolean;
 }
 
 export function ThemeSwitcher({
   clrScheme,
   onSelectPreset,
+  onPreviewPreset,
+  onPreviewEnd,
   onSlotChange,
+  onSlotPreview,
   disabled = false,
 }: ThemeSwitcherProps) {
   const activePresetId = findPresetId(clrScheme ?? undefined);
@@ -36,7 +48,7 @@ export function ThemeSwitcher({
         {clrScheme && <span className="themeSwitcherName">{clrScheme.name}</span>}
       </div>
 
-      <div className="themePresets">
+      <div className="themePresets" onMouseLeave={() => onPreviewEnd?.()}>
         {THEME_PRESETS.map((preset) => {
           const active = preset.id === activePresetId;
           return (
@@ -46,7 +58,12 @@ export function ThemeSwitcher({
               className={`themePresetBtn${active ? ' themePresetBtnActive' : ''}`}
               disabled={disabled}
               onClick={() => onSelectPreset(preset)}
-              title={preset.clrScheme.name}
+              onMouseEnter={() => {
+                if (!disabled) {
+                  onPreviewPreset?.(preset);
+                }
+              }}
+              title={`${preset.clrScheme.name}（悬停预览，点击应用）`}
             >
               <span className="themePresetSwatches" aria-hidden>
                 {(['accent1', 'accent2', 'accent3', 'accent4'] as const).map((slot) => (
@@ -76,7 +93,11 @@ export function ThemeSwitcher({
                     className="themeColorInput"
                     value={normalizeColorInput(color)}
                     disabled={disabled || !onSlotChange}
+                    onInput={(e) =>
+                      onSlotPreview?.(slot, (e.target as HTMLInputElement).value)
+                    }
                     onChange={(e) => onSlotChange?.(slot, e.target.value)}
+                    onBlur={() => onPreviewEnd?.()}
                   />
                   <code className="themeSlotHex">{color}</code>
                 </span>
@@ -87,7 +108,7 @@ export function ThemeSwitcher({
       )}
 
       <p className="themeHint">
-        转换时会把 AntV 色板映射为 accent1…6；切换主题只改 deck.attrs.theme.clrScheme，色槽引用会即时变色。
+        悬停预设仅预览（不改 JSON）；点击后才写入 <code>deck.attrs.theme.clrScheme</code>。
       </p>
     </section>
   );

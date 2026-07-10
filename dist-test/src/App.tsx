@@ -13,6 +13,12 @@ import type { GalleryTemplatePayload } from './gallery-picker';
 import { SAMPLE_SVG } from './sample-svg';
 import { THEME_PRESETS, toThemeConfig, type ThemePreset } from './theme-presets';
 import { ThemeSwitcher } from './theme-switcher';
+import { TextStyleSwitcher } from './text-style-switcher';
+import {
+  sampleTextStyle,
+  withTextStyleOverrides,
+  type TextStyleOverride,
+} from './apply-text-style';
 
 function withClrScheme(document: DeckDocument, clrScheme: DeckTheme): DeckDocument {
   return {
@@ -38,7 +44,12 @@ export function App() {
   const [offsetLeft, setOffsetLeft] = useState(0);
   const [width, setWidth] = useState(960);
   const [height, setHeight] = useState(640);
-  const [overrideClrScheme, setOverrideClrScheme] = useState<DeckTheme | null>(null);
+  /** 悬停预览主题；仅驱动 CSS，不写入 document */
+  const [hoverPreviewClrScheme, setHoverPreviewClrScheme] = useState<DeckTheme | null>(null);
+  /** 悬停预览字号 / 颜色；仅驱动渲染，不写入 marks */
+  const [hoverPreviewTextStyle, setHoverPreviewTextStyle] = useState<TextStyleOverride | null>(
+    null,
+  );
 
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
@@ -47,29 +58,37 @@ export function App() {
 
   const renderSize = useMemo(() => ({ width, height }), [width, height]);
 
-  const previewDocument = useMemo(() => {
-    if (!result?.document) {
-      return null;
+  const committedDocument = result?.document ?? null;
+  const committedClrScheme = committedDocument?.attrs?.theme?.clrScheme ?? null;
+  const committedTextStyle = useMemo(
+    () => sampleTextStyle(committedDocument),
+    [committedDocument],
+  );
+  const textSwatchColors = useMemo(() => {
+    if (!committedClrScheme) {
+      return [];
     }
-    if (!overrideClrScheme) {
-      return result.document;
-    }
-    return withClrScheme(result.document, overrideClrScheme);
-  }, [result, overrideClrScheme]);
-
-  const activeClrScheme = previewDocument?.attrs?.theme?.clrScheme ?? null;
+    return [
+      committedClrScheme.dk1,
+      committedClrScheme.dk2,
+      committedClrScheme.accent1,
+      committedClrScheme.accent2,
+      committedClrScheme.accent3,
+    ].filter(Boolean);
+  }, [committedClrScheme]);
 
   const applyResult = useCallback((converted: ConvertResult) => {
     setResult(converted);
-    setOverrideClrScheme(null);
+    setHoverPreviewClrScheme(null);
+    setHoverPreviewTextStyle(null);
   }, []);
 
   const jsonOutput = useMemo(() => {
-    if (!previewDocument) {
+    if (!committedDocument) {
       return '';
     }
-    return JSON.stringify(previewDocument, null, 2);
-  }, [previewDocument]);
+    return JSON.stringify(committedDocument, null, 2);
+  }, [committedDocument]);
 
   const handleConvertSvg = useCallback(() => {
     try {
@@ -93,7 +112,8 @@ export function App() {
     setRenderedSvg(payload.svg);
     setSelectedTemplate(payload.selection.slug);
     setResult(null);
-    setOverrideClrScheme(null);
+    setHoverPreviewClrScheme(null);
+    setHoverPreviewTextStyle(null);
     setError(null);
   }, []);
 
@@ -144,7 +164,7 @@ export function App() {
   }, [jsonOutput]);
 
   const handleSelectPreset = useCallback((preset: ThemePreset) => {
-    setOverrideClrScheme(preset.clrScheme);
+    setHoverPreviewClrScheme(null);
     setResult((prev) => {
       if (!prev) {
         return prev;
@@ -156,30 +176,83 @@ export function App() {
     });
   }, []);
 
-  const handleSlotChange = useCallback(
+  const handlePreviewPreset = useCallback((preset: ThemePreset) => {
+    setHoverPreviewClrScheme(preset.clrScheme);
+  }, []);
+
+  const handlePreviewEnd = useCallback(() => {
+    setHoverPreviewClrScheme(null);
+  }, []);
+
+  const handleSlotPreview = useCallback(
     (slot: ThemeColorSlot, color: string) => {
-      setOverrideClrScheme((prev) => {
-        const base =
-          prev ?? result?.document.attrs?.theme?.clrScheme ?? THEME_PRESETS[0].clrScheme;
-        const next: DeckTheme = {
-          ...base,
-          name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
-          [slot]: color,
-        };
-        setResult((current) => {
-          if (!current) {
-            return current;
-          }
-          return {
-            ...current,
-            document: withClrScheme(current.document, next),
-          };
-        });
-        return next;
+      const base = committedClrScheme ?? THEME_PRESETS[0].clrScheme;
+      setHoverPreviewClrScheme({
+        ...base,
+        name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
+        [slot]: color,
       });
     },
-    [result],
+    [committedClrScheme],
   );
+
+  const handleSlotChange = useCallback((slot: ThemeColorSlot, color: string) => {
+    setHoverPreviewClrScheme(null);
+    setResult((current) => {
+      if (!current) {
+        return current;
+      }
+      const base =
+        current.document.attrs?.theme?.clrScheme ?? THEME_PRESETS[0].clrScheme;
+      const next: DeckTheme = {
+        ...base,
+        name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
+        [slot]: color,
+      };
+      return {
+        ...current,
+        document: withClrScheme(current.document, next),
+      };
+    });
+  }, []);
+
+  const handlePreviewFontSize = useCallback((fontSize: string) => {
+    setHoverPreviewTextStyle({ fontSize });
+  }, []);
+
+  const handleSelectFontSize = useCallback((fontSize: string) => {
+    setHoverPreviewTextStyle(null);
+    setResult((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        document: withTextStyleOverrides(current.document, { fontSize }),
+      };
+    });
+  }, []);
+
+  const handlePreviewTextColor = useCallback((color: string) => {
+    setHoverPreviewTextStyle({ color });
+  }, []);
+
+  const handleSelectTextColor = useCallback((color: string) => {
+    setHoverPreviewTextStyle(null);
+    setResult((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        document: withTextStyleOverrides(current.document, { color }),
+      };
+    });
+  }, []);
+
+  const handleTextStylePreviewEnd = useCallback(() => {
+    setHoverPreviewTextStyle(null);
+  }, []);
 
   return (
     <div className="page">
@@ -267,10 +340,25 @@ export function App() {
         </div>
 
         <ThemeSwitcher
-          clrScheme={activeClrScheme}
+          clrScheme={committedClrScheme}
           onSelectPreset={handleSelectPreset}
+          onPreviewPreset={handlePreviewPreset}
+          onPreviewEnd={handlePreviewEnd}
           onSlotChange={handleSlotChange}
+          onSlotPreview={handleSlotPreview}
           disabled={!result}
+        />
+
+        <TextStyleSwitcher
+          fontSize={committedTextStyle.fontSize}
+          color={committedTextStyle.color}
+          swatchColors={textSwatchColors}
+          onPreviewFontSize={handlePreviewFontSize}
+          onSelectFontSize={handleSelectFontSize}
+          onPreviewColor={handlePreviewTextColor}
+          onSelectColor={handleSelectTextColor}
+          onPreviewEnd={handleTextStylePreviewEnd}
+          disabled={!result || !committedTextStyle.hasText}
         />
 
         <div className="apiDocs">
@@ -403,15 +491,16 @@ export function App() {
         <section className="panel deckPreviewPanel">
           <h2>
             Deck 主题预览
-            {activeClrScheme && (
-              <span className="panelHint"> · {activeClrScheme.name}</span>
+            {committedClrScheme && (
+              <span className="panelHint"> · {committedClrScheme.name}</span>
             )}
           </h2>
           <div className="previewBox deckPreviewBox">
-            {previewDocument ? (
+            {committedDocument ? (
               <DeckPreview
-                key={`${previewDocument.attrs.theme.clrScheme.name}-${previewDocument.attrs.theme.clrScheme.accent1}`}
-                document={previewDocument}
+                document={committedDocument}
+                previewClrScheme={hoverPreviewClrScheme}
+                previewTextStyle={hoverPreviewTextStyle}
               />
             ) : (
               <span className="placeholder">转换后可切换主题色查看色槽渲染</span>

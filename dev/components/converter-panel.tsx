@@ -12,8 +12,14 @@ import { computeDeckSize, DeckEditor } from '../tiptap/deck-editor';
 import { GalleryPicker } from './gallery-picker';
 import { InfographicSdkPreview } from './infographic-sdk-preview';
 import { ThemeSwitcher } from './theme-switcher';
+import { TextStyleSwitcher } from './text-style-switcher';
 import { ZoomableViewport } from './zoomable-viewport';
 import { SAMPLE_SVG } from '../samples/default-svg';
+import {
+  sampleTextStyle,
+  withTextStyleOverrides,
+  type TextStyleOverride,
+} from '../text-style/apply-text-style';
 import { THEME_PRESETS, toThemeConfig, type ThemePreset } from '../theme/presets';
 import styles from './converter-panel.module.css';
 
@@ -46,8 +52,12 @@ export function ConverterPanel() {
   const [rendering, setRendering] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE);
   const [sdkPreviewSyntax, setSdkPreviewSyntax] = useState('');
-  /** 预览覆盖主题；null 表示使用转换结果自带的 clrScheme */
-  const [overrideClrScheme, setOverrideClrScheme] = useState<DeckTheme | null>(null);
+  /** 悬停预览主题；仅驱动 CSS，不写入 document */
+  const [hoverPreviewClrScheme, setHoverPreviewClrScheme] = useState<DeckTheme | null>(null);
+  /** 悬停预览字号 / 颜色；仅驱动 CSS，不写入 marks */
+  const [hoverPreviewTextStyle, setHoverPreviewTextStyle] = useState<TextStyleOverride | null>(
+    null,
+  );
 
   const convertOptions = useMemo(
     () => ({ extractText, offsetTop, offsetLeft }),
@@ -62,21 +72,29 @@ export function ConverterPanel() {
     [renderWidth, renderHeight],
   );
 
-  const previewDocument = useMemo(() => {
-    if (!result?.document) {
-      return null;
+  const committedDocument = result?.document ?? null;
+  const committedClrScheme = committedDocument?.attrs?.theme?.clrScheme ?? null;
+  const committedTextStyle = useMemo(
+    () => sampleTextStyle(committedDocument),
+    [committedDocument],
+  );
+  const textSwatchColors = useMemo(() => {
+    if (!committedClrScheme) {
+      return [];
     }
-    if (!overrideClrScheme) {
-      return result.document;
-    }
-    return withClrScheme(result.document, overrideClrScheme);
-  }, [result, overrideClrScheme]);
-
-  const activeClrScheme = previewDocument?.attrs?.theme?.clrScheme ?? null;
+    return [
+      committedClrScheme.dk1,
+      committedClrScheme.dk2,
+      committedClrScheme.accent1,
+      committedClrScheme.accent2,
+      committedClrScheme.accent3,
+    ].filter(Boolean);
+  }, [committedClrScheme]);
 
   const applyResult = useCallback((converted: ConvertResult) => {
     setResult(converted);
-    setOverrideClrScheme(null);
+    setHoverPreviewClrScheme(null);
+    setHoverPreviewTextStyle(null);
   }, []);
 
   const handleConvert = useCallback(() => {
@@ -96,18 +114,18 @@ export function ConverterPanel() {
   }, [svgInput, convertOptions, mapColorsToThemeSlots, applyResult]);
 
   const jsonOutput = useMemo(() => {
-    if (!previewDocument) {
+    if (!committedDocument) {
       return '';
     }
-    return JSON.stringify(previewDocument, null, 2);
-  }, [previewDocument]);
+    return JSON.stringify(committedDocument, null, 2);
+  }, [committedDocument]);
 
   const compressedJsonOutput = useMemo(() => {
-    if (!previewDocument) {
+    if (!committedDocument) {
       return '';
     }
-    return JSON.stringify(previewDocument);
-  }, [previewDocument]);
+    return JSON.stringify(committedDocument);
+  }, [committedDocument]);
 
   const handleCopyJson = useCallback(async () => {
     if (!jsonOutput) {
@@ -127,7 +145,8 @@ export function ConverterPanel() {
     setError(null);
     setSyntaxWarnings(null);
     setResult(null);
-    setOverrideClrScheme(null);
+    setHoverPreviewClrScheme(null);
+    setHoverPreviewTextStyle(null);
     setSelectedTemplate(DEFAULT_TEMPLATE);
 
     try {
@@ -155,7 +174,8 @@ export function ConverterPanel() {
       setSdkPreviewSyntax(payload.syntax);
       setSvgInput(payload.svg);
       setResult(null);
-      setOverrideClrScheme(null);
+      setHoverPreviewClrScheme(null);
+      setHoverPreviewTextStyle(null);
       setError(null);
       setSyntaxWarnings(null);
       setSelectedTemplate(payload.selection.slug);
@@ -211,7 +231,7 @@ export function ConverterPanel() {
   ]);
 
   const handleSelectPreset = useCallback((preset: ThemePreset) => {
-    setOverrideClrScheme(preset.clrScheme);
+    setHoverPreviewClrScheme(null);
     setResult((prev) => {
       if (!prev) {
         return prev;
@@ -223,29 +243,87 @@ export function ConverterPanel() {
     });
   }, []);
 
-  const handleSlotChange = useCallback((slot: ThemeColorSlot, color: string) => {
-    setOverrideClrScheme((prev) => {
+  const handlePreviewPreset = useCallback((preset: ThemePreset) => {
+    setHoverPreviewClrScheme(preset.clrScheme);
+  }, []);
+
+  const handlePreviewEnd = useCallback(() => {
+    setHoverPreviewClrScheme(null);
+  }, []);
+
+  const handleSlotPreview = useCallback(
+    (slot: ThemeColorSlot, color: string) => {
       const base =
-        prev ??
-        result?.document.attrs?.theme?.clrScheme ??
-        THEME_PRESETS[0].clrScheme;
-      const next: DeckTheme = {
+        committedClrScheme ?? THEME_PRESETS[0].clrScheme;
+      setHoverPreviewClrScheme({
         ...base,
         name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
         [slot]: color,
-      };
+      });
+    },
+    [committedClrScheme],
+  );
+
+  const handleSlotChange = useCallback(
+    (slot: ThemeColorSlot, color: string) => {
+      setHoverPreviewClrScheme(null);
       setResult((current) => {
         if (!current) {
           return current;
         }
+        const base =
+          current.document.attrs?.theme?.clrScheme ?? THEME_PRESETS[0].clrScheme;
+        const next: DeckTheme = {
+          ...base,
+          name: base.name.endsWith(' (custom)') ? base.name : `${base.name} (custom)`,
+          [slot]: color,
+        };
         return {
           ...current,
           document: withClrScheme(current.document, next),
         };
       });
-      return next;
+    },
+    [],
+  );
+
+  const handlePreviewFontSize = useCallback((fontSize: string) => {
+    setHoverPreviewTextStyle({ fontSize });
+  }, []);
+
+  const handleSelectFontSize = useCallback((fontSize: string) => {
+    setHoverPreviewTextStyle(null);
+    setResult((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        document: withTextStyleOverrides(current.document, { fontSize }),
+      };
     });
-  }, [result]);
+  }, []);
+
+  const handlePreviewTextColor = useCallback((color: string) => {
+    setHoverPreviewTextStyle({ color });
+  }, []);
+
+  const handleSelectTextColor = useCallback((color: string) => {
+    setHoverPreviewTextStyle(null);
+    setResult((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        document: withTextStyleOverrides(current.document, { color }),
+      };
+    });
+  }, []);
+
+  const handleTextStylePreviewEnd = useCallback(() => {
+    setHoverPreviewTextStyle(null);
+  }, []);
 
   return (
     <div className={styles.layout}>
@@ -347,10 +425,25 @@ export function ConverterPanel() {
       </div>
 
       <ThemeSwitcher
-        clrScheme={activeClrScheme}
+        clrScheme={committedClrScheme}
         onSelectPreset={handleSelectPreset}
+        onPreviewPreset={handlePreviewPreset}
+        onPreviewEnd={handlePreviewEnd}
         onSlotChange={handleSlotChange}
+        onSlotPreview={handleSlotPreview}
         disabled={!result}
+      />
+
+      <TextStyleSwitcher
+        fontSize={committedTextStyle.fontSize}
+        color={committedTextStyle.color}
+        swatchColors={textSwatchColors}
+        onPreviewFontSize={handlePreviewFontSize}
+        onSelectFontSize={handleSelectFontSize}
+        onPreviewColor={handlePreviewTextColor}
+        onSelectColor={handleSelectTextColor}
+        onPreviewEnd={handleTextStylePreviewEnd}
+        disabled={!result || !committedTextStyle.hasText}
       />
 
       {syntaxWarnings && <div className={styles.warning}>{syntaxWarnings}</div>}
@@ -419,15 +512,16 @@ export function ConverterPanel() {
 
         <section className={`${styles.panel} ${styles.previewPanel}`}>
           <h2 className={styles.panelTitle}>TipTap 渲染预览</h2>
-          {previewDocument ? (
+          {committedDocument ? (
             <ZoomableViewport
-              contentWidth={computeDeckSize(previewDocument).width}
-              contentHeight={computeDeckSize(previewDocument).height}
+              contentWidth={computeDeckSize(committedDocument).width}
+              contentHeight={computeDeckSize(committedDocument).height}
               defaultScale={0.55}
             >
               <DeckEditor
-                key={`${previewDocument.attrs.theme.clrScheme.name}-${previewDocument.attrs.theme.clrScheme.accent1}`}
-                document={previewDocument}
+                document={committedDocument}
+                previewClrScheme={hoverPreviewClrScheme}
+                previewTextStyle={hoverPreviewTextStyle}
               />
             </ZoomableViewport>
           ) : (

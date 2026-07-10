@@ -6,10 +6,12 @@ import {
   type DeckDocument,
   type DeckNode,
   type DeckNodeChild,
+  type DeckTheme,
   type MultiBlockContainerNode,
   type ParagraphNode,
   type TextNode,
 } from '../../dist/browser/index.js';
+import type { TextStyleOverride } from './apply-text-style';
 
 const COLOR_ATTRS = new Set([
   'fill',
@@ -105,16 +107,28 @@ function resolveGradientSlots(gradient: string): string {
   );
 }
 
-function textStyle(node: TextNode): CSSProperties | undefined {
+function textStyle(
+  node: TextNode,
+  previewTextStyle?: TextStyleOverride | null,
+): CSSProperties | undefined {
   const textStyleMark = node.marks?.find((m) => m.type === 'textStyle');
   const colorMark = node.marks?.find((m) => m.type === 'textGradientColor');
   const style: CSSProperties = {};
 
   if (textStyleMark) {
     style.fontFamily = textStyleMark.attrs.fontFamily;
-    style.fontSize = textStyleMark.attrs.fontSize;
+    style.fontSize = previewTextStyle?.fontSize ?? textStyleMark.attrs.fontSize;
+  } else if (previewTextStyle?.fontSize) {
+    style.fontSize = previewTextStyle.fontSize;
   }
-  if (colorMark?.attrs.textGradientColor) {
+
+  if (previewTextStyle?.color) {
+    style.color = toThemeCssValue(previewTextStyle.color);
+    style.WebkitTextFillColor = toThemeCssValue(previewTextStyle.color);
+    style.background = 'none';
+    style.WebkitBackgroundClip = 'border-box';
+    style.backgroundClip = 'border-box';
+  } else if (colorMark?.attrs.textGradientColor) {
     style.background = resolveGradientSlots(colorMark.attrs.textGradientColor);
     style.WebkitBackgroundClip = 'text';
     style.backgroundClip = 'text';
@@ -127,31 +141,42 @@ function textStyle(node: TextNode): CSSProperties | undefined {
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
-function renderText(node: TextNode, key: number) {
+function renderText(
+  node: TextNode,
+  key: number,
+  previewTextStyle?: TextStyleOverride | null,
+) {
   return (
-    <span key={key} style={textStyle(node)}>
+    <span key={key} style={textStyle(node, previewTextStyle)}>
       {node.text}
     </span>
   );
 }
 
-function renderParagraph(p: ParagraphNode, key: number) {
+function renderParagraph(
+  p: ParagraphNode,
+  key: number,
+  previewTextStyle?: TextStyleOverride | null,
+) {
   return (
     <p key={key} style={{ margin: 0, lineHeight: 1.2, textAlign: p.attrs?.textAlign }}>
-      {p.content.map((t, i) => renderText(t, i))}
+      {p.content.map((t, i) => renderText(t, i, previewTextStyle))}
     </p>
   );
 }
 
-function renderMultiBlock(node: MultiBlockContainerNode) {
+function renderMultiBlock(
+  node: MultiBlockContainerNode,
+  previewTextStyle?: TextStyleOverride | null,
+) {
   return (
     <div style={{ padding: node.attrs.padding, width: '100%', height: '100%', boxSizing: 'border-box' }}>
-      {node.content.map((p, i) => renderParagraph(p, i))}
+      {node.content.map((p, i) => renderParagraph(p, i, previewTextStyle))}
     </div>
   );
 }
 
-function renderChild(child: DeckNodeChild) {
+function renderChild(child: DeckNodeChild, previewTextStyle?: TextStyleOverride | null) {
   if (child.type === 'svg') {
     const markup = child.attrs.commands.map(commandToMarkup).join('');
     return (
@@ -165,10 +190,14 @@ function renderChild(child: DeckNodeChild) {
       />
     );
   }
-  return renderMultiBlock(child);
+  return renderMultiBlock(child, previewTextStyle);
 }
 
-function renderDeckNode(node: DeckNode, key: number) {
+function renderDeckNode(
+  node: DeckNode,
+  key: number,
+  previewTextStyle?: TextStyleOverride | null,
+) {
   const { width, height, top, left, wrap } = node.attrs;
   return (
     <div
@@ -183,28 +212,36 @@ function renderDeckNode(node: DeckNode, key: number) {
         overflow: 'hidden',
       }}
     >
-      {node.content[0] ? renderChild(node.content[0]) : null}
+      {node.content[0] ? renderChild(node.content[0], previewTextStyle) : null}
     </div>
   );
 }
 
 interface DeckPreviewProps {
   document: DeckDocument;
+  /**
+   * 悬停预览主题：只改 CSS 变量，不改 document 结构。
+   * 为 null / undefined 时使用 document.attrs.theme.clrScheme。
+   */
+  previewClrScheme?: DeckTheme | null;
+  /** 悬停预览字号 / 颜色：只改渲染，不改 marks */
+  previewTextStyle?: TextStyleOverride | null;
 }
 
-export function DeckPreview({ document }: DeckPreviewProps) {
-  const theme = document.attrs.theme;
-  const cssVars = useMemo(
-    () => buildClrSchemeCssVars(theme.clrScheme),
-    [theme.clrScheme],
-  );
+export function DeckPreview({
+  document,
+  previewClrScheme = null,
+  previewTextStyle = null,
+}: DeckPreviewProps) {
+  const clrScheme = previewClrScheme ?? document.attrs.theme.clrScheme;
+  const cssVars = useMemo(() => buildClrSchemeCssVars(clrScheme), [clrScheme]);
   const width = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
   const height = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
 
   return (
     <div
       className="deckPreview"
-      data-theme-name={theme.clrScheme.name}
+      data-theme-name={clrScheme.name}
       style={{
         position: 'relative',
         width,
@@ -217,7 +254,7 @@ export function DeckPreview({ document }: DeckPreviewProps) {
         ...cssVars,
       }}
     >
-      {document.content.map((node, i) => renderDeckNode(node, i))}
+      {document.content.map((node, i) => renderDeckNode(node, i, previewTextStyle))}
     </div>
   );
 }

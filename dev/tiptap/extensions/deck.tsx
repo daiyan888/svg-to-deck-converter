@@ -1,10 +1,15 @@
 import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
+import { createContext, useContext } from 'react';
 import {
   DEFAULT_DECK_THEME_CONFIG,
   buildClrSchemeCssVars,
+  type DeckTheme,
   type DeckThemeConfig,
 } from 'svg-to-deck-converter';
+
+/** 悬停预览主题；不改 TipTap 文档 attrs，只影响渲染用的 CSS 变量 */
+export const DeckPreviewClrSchemeContext = createContext<DeckTheme | null>(null);
 
 function computeDeckBounds(node: NodeViewProps['node']): { width: number; height: number } {
   let width = 400;
@@ -21,13 +26,15 @@ function computeDeckBounds(node: NodeViewProps['node']): { width: number; height
 function DeckNodeView({ node }: NodeViewProps) {
   const { width, height } = computeDeckBounds(node);
   const theme = (node.attrs.theme as DeckThemeConfig | null) ?? DEFAULT_DECK_THEME_CONFIG;
-  const cssVars = buildClrSchemeCssVars(theme.clrScheme);
+  const previewClrScheme = useContext(DeckPreviewClrSchemeContext);
+  const clrScheme = previewClrScheme ?? theme.clrScheme;
+  const cssVars = buildClrSchemeCssVars(clrScheme);
 
   return (
     <NodeViewWrapper
       as="div"
       data-deck=""
-      data-theme-name={theme.clrScheme.name}
+      data-theme-name={clrScheme.name}
       style={{
         position: 'relative',
         width,
