@@ -3,6 +3,8 @@ import {
   type ConvertInfographicResult,
   type DeckDocument,
 } from 'svg-to-deck-converter';
+// Bundler 解析：相对路径可不写 .js（若用 NodeNext 则必须写成 './defaults.js'）
+import { DEFAULT_DECK_SIZE } from './defaults';
 
 export interface GetDeckNodesInput {
   syntax: string;
@@ -23,7 +25,12 @@ export interface GetDeckNodesResult {
  * Node 环境会通过 package exports 解析到 index.node.*。
  */
 export async function getDeckNodes(input: GetDeckNodesInput): Promise<GetDeckNodesResult> {
-  const { syntax, width = 960, height = 640, mapColorsToThemeSlots = true } = input;
+  const {
+    syntax,
+    width = DEFAULT_DECK_SIZE.width,
+    height = DEFAULT_DECK_SIZE.height,
+    mapColorsToThemeSlots = true,
+  } = input;
 
   const result = await convertInfographicFromSyntax({
     syntax,
