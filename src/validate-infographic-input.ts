@@ -1,4 +1,5 @@
-import { parseSyntax, type SyntaxError } from '@antv/infographic';
+import { getTemplates, parseSyntax, type SyntaxError } from '@antv/infographic';
+import { getCategoryId } from './gallery/categories.js';
 
 export type ValidationIssueCode =
   | 'empty'
@@ -6,7 +7,9 @@ export type ValidationIssueCode =
   | 'missing_field'
   | 'invalid_value'
   | 'empty_collection'
-  | 'syntax_error';
+  | 'syntax_error'
+  | 'unknown_template'
+  | 'category_mismatch';
 
 export interface ValidationIssue {
   /** 出错字段路径，如 `data.values[0].value` */
@@ -26,7 +29,7 @@ export interface ValidationResult {
 }
 
 export type ValidateInfographicInputArg =
-  | { data: unknown; syntax?: undefined }
+  | { data: unknown; template?: string; category?: string; syntax?: undefined }
   | { syntax: unknown; data?: undefined };
 
 const COLLECTION_KEYS = [
@@ -245,6 +248,51 @@ function mapSyntaxError(error: SyntaxError): ValidationIssue {
 }
 
 /**
+ * 校验模板 slug 是否存在于 AntV Infographic 本地模板列表（无网络请求）。
+ * 若传入 `category`，同时校验模板是否属于该类型。
+ */
+export function validateInfographicTemplate(
+  template: unknown,
+  category?: unknown,
+): ValidationResult {
+  const errors: ValidationIssue[] = [];
+  const warnings: ValidationIssue[] = [];
+
+  if (typeof template !== 'string' || template.trim() === '') {
+    pushError(errors, 'template', 'template 必须是非空字符串', 'invalid_type');
+    return { valid: false, errors, warnings };
+  }
+
+  const slug = template.trim();
+  if (!getTemplates().includes(slug)) {
+    pushError(errors, 'template', `未知模板: ${slug}`, 'unknown_template');
+    return { valid: false, errors, warnings };
+  }
+
+  if (category !== undefined) {
+    if (typeof category !== 'string' || category.trim() === '') {
+      pushError(errors, 'category', 'category 必须是非空字符串', 'invalid_type');
+    } else {
+      const actualCategory = getCategoryId(slug);
+      if (actualCategory !== category.trim()) {
+        pushError(
+          errors,
+          'category',
+          `模板 "${slug}" 不属于类型 "${category.trim()}"，实际类型为 "${actualCategory}"`,
+          'category_mismatch',
+        );
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
  * 校验 Infographic Syntax 字符串（与 `convertInfographicFromSyntax` 的 syntax 入参一致）。
  */
 export function validateInfographicSyntax(syntax: unknown): ValidationResult {
@@ -273,6 +321,10 @@ export function validateInfographicSyntax(syntax: unknown): ValidationResult {
 
   if (!parsed.options.template) {
     pushError(errors, 'template', 'syntax 缺少模板声明（infographic <template>）', 'missing_field');
+  } else {
+    const templateResult = validateInfographicTemplate(parsed.options.template);
+    errors.push(...templateResult.errors);
+    warnings.push(...templateResult.warnings);
   }
 
   if (parsed.options.data === undefined) {
@@ -342,8 +394,28 @@ export function validateInfographicInput(
   }
 
   if (hasData) {
-    return validateInfographicData(input.data);
+    const dataInput = input as Extract<ValidateInfographicInputArg, { data: unknown }>;
+    const dataResult = validateInfographicData(dataInput.data);
+    const errors = [...dataResult.errors];
+    const warnings = [...dataResult.warnings];
+
+    if (dataInput.template !== undefined || dataInput.category !== undefined) {
+      const templateResult = validateInfographicTemplate(
+        dataInput.template,
+        dataInput.category,
+      );
+      errors.push(...templateResult.errors);
+      warnings.push(...templateResult.warnings);
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
+    };
   }
 
-  return validateInfographicSyntax(input.syntax);
+  return validateInfographicSyntax(
+    (input as Extract<ValidateInfographicInputArg, { syntax: unknown }>).syntax,
+  );
 }

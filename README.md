@@ -215,7 +215,17 @@ const syntaxResult = validateInfographicInput({ syntax });
 // syntaxResult.valid === true
 ```
 
-也可直接使用细分方法：`validateInfographicData(data)`、`validateInfographicSyntax(syntax)`。
+也可直接使用细分方法：`validateInfographicData(data)`、`validateInfographicSyntax(syntax)`、`validateInfographicTemplate(template, category?)`。
+
+校验 `data` 时可附带模板信息（与 `convertInfographicToDeck` 对齐）：
+
+```ts
+validateInfographicInput({
+  data: sampleData,
+  template: 'chart-bar-plain-text',
+  category: 'chart-bar', // 可选；传入则校验模板是否属于该类型
+});
+```
 
 ### 返回值
 
@@ -225,7 +235,7 @@ const syntaxResult = validateInfographicInput({ syntax });
 | `errors` | 错误列表；每项含 `path`、`message`、`code`，Syntax 错误可能含 `line` |
 | `warnings` | 警告列表（结构同 `errors`；Syntax 解析警告会映射到此） |
 
-`data` 与 `syntax` 必须二选一传入。`data` 需为对象，且至少包含非空的 `values` / `items` / `lists` / `sequences` / `compares` / `nodes` / `root` / `relations` 之一；`syntax` 需能解析出模板与 `data` 区块。
+`data` 与 `syntax` 必须二选一传入。`data` 需为对象，且至少包含非空的 `values` / `items` / `lists` / `sequences` / `compares` / `nodes` / `root` / `relations` 之一；`syntax` 需能解析出模板与 `data` 区块，且模板 slug 须存在于 AntV 本地模板列表（`getTemplates()`，无网络请求）。
 
 ## 本地开发
 

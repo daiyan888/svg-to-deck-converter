@@ -3,6 +3,7 @@ import {
   validateInfographicData,
   validateInfographicInput,
   validateInfographicSyntax,
+  validateInfographicTemplate,
 } from './validate-infographic-input.js';
 
 const sampleData = {
@@ -123,12 +124,59 @@ data
     expect(noData.valid).toBe(false);
     expect(noData.errors.some((e) => e.path === 'data')).toBe(true);
   });
+
+  it('rejects unknown gallery templates', () => {
+    const result = validateInfographicSyntax(`
+infographic not-a-real-template
+data
+  title hello
+  values
+    - label a
+      value 1
+`.trim());
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.code === 'unknown_template')).toBe(true);
+  });
+});
+
+describe('validateInfographicTemplate', () => {
+  it('accepts known templates and matching categories', () => {
+    expect(validateInfographicTemplate('chart-bar-plain-text').valid).toBe(true);
+    expect(
+      validateInfographicTemplate('chart-bar-plain-text', 'chart-bar').valid,
+    ).toBe(true);
+  });
+
+  it('rejects unknown templates and category mismatches', () => {
+    expect(validateInfographicTemplate('not-a-real-template').errors[0]?.code).toBe(
+      'unknown_template',
+    );
+    expect(
+      validateInfographicTemplate('chart-bar-plain-text', 'list').errors[0]?.code,
+    ).toBe('category_mismatch');
+  });
 });
 
 describe('validateInfographicInput', () => {
   it('routes data and syntax correctly', () => {
     expect(validateInfographicInput({ data: sampleData }).valid).toBe(true);
     expect(validateInfographicInput({ syntax: sampleSyntax }).valid).toBe(true);
+  });
+
+  it('validates optional template/category with data', () => {
+    expect(
+      validateInfographicInput({
+        data: sampleData,
+        template: 'chart-bar-plain-text',
+        category: 'chart-bar',
+      }).valid,
+    ).toBe(true);
+    expect(
+      validateInfographicInput({
+        data: sampleData,
+        template: 'not-a-real-template',
+      }).errors.some((e) => e.code === 'unknown_template'),
+    ).toBe(true);
   });
 
   it('rejects when both or neither are provided', () => {

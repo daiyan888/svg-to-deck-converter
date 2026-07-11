@@ -12,6 +12,7 @@ export {
   validateInfographicData,
   validateInfographicInput,
   validateInfographicSyntax,
+  validateInfographicTemplate,
 } from './validate-infographic-input.js';
 export type {
   ValidateInfographicInputArg,
