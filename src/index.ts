@@ -9,6 +9,18 @@ export type {
 } from './convert-infographic-to-deck.js';
 
 export {
+  validateInfographicData,
+  validateInfographicInput,
+  validateInfographicSyntax,
+} from './validate-infographic-input.js';
+export type {
+  ValidateInfographicInputArg,
+  ValidationIssue,
+  ValidationIssueCode,
+  ValidationResult,
+} from './validate-infographic-input.js';
+
+export {
   convertSvgToDeck,
   extractSvgFromHtml,
   svgElementToCommands,

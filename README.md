@@ -170,12 +170,70 @@ const { svg, document, stats, warnings } = await convertInfographicFromSyntax({
 
 与 `convertInfographicToDeck` 相同，额外包含 `warnings`（Syntax 解析警告）。
 
+## `validateInfographicInput`
+
+在调用转换 API 前，校验 `data` 或 `syntax` 是否合法。返回 `{ valid, errors, warnings }`；`valid === false` 时 `errors` 含可读错误信息。
+
+```ts
+import { validateInfographicInput } from 'svg-to-deck-converter';
+
+// 校验 convertInfographicToDeck 的 data
+const dataResult = validateInfographicInput({
+  data: {
+    title: '年度营收增长',
+    desc: '展示近三年及本年目标营收对比（单位：亿元）',
+    values: [
+      { label: '2021年', value: 120, desc: '转型初期', icon: 'lucide/sprout' },
+      { label: '2022年', value: 150, desc: '平台优化', icon: 'lucide/zap' },
+      { label: '2023年', value: 190, desc: '全面增长', icon: 'lucide/brain-circuit' },
+      { label: '2024年', value: 240, desc: '冲击新高', icon: 'lucide/trophy' },
+    ],
+  },
+});
+// dataResult.valid === true
+
+// 校验 convertInfographicFromSyntax 的 syntax
+const syntax = `
+infographic chart-bar-plain-text
+data
+  title 年度营收增长
+  desc 展示近三年及本年目标营收对比（单位：亿元）
+  values
+    - label 2021年
+      value 120
+      desc 转型初期
+      icon lucide/sprout
+    - label 2022年
+      value 150
+      desc 平台优化
+      icon lucide/zap
+theme light
+  palette #2563EB #7C3AED #DB2777
+`.trim();
+
+const syntaxResult = validateInfographicInput({ syntax });
+// syntaxResult.valid === true
+```
+
+也可直接使用细分方法：`validateInfographicData(data)`、`validateInfographicSyntax(syntax)`。
+
+### 返回值
+
+| 字段 | 说明 |
+|------|------|
+| `valid` | 是否通过校验 |
+| `errors` | 错误列表；每项含 `path`、`message`、`code`，Syntax 错误可能含 `line` |
+| `warnings` | 警告列表（结构同 `errors`；Syntax 解析警告会映射到此） |
+
+`data` 与 `syntax` 必须二选一传入。`data` 需为对象，且至少包含非空的 `values` / `items` / `lists` / `sequences` / `compares` / `nodes` / `root` / `relations` 之一；`syntax` 需能解析出模板与 `data` 区块。
+
 ## 本地开发
 
 ```bash
 npm install
 npm run dev          # dev/ 测试页（含主题切换）
 npm run build
+npm run test         # 单元测试
 npm run test:dist    # dist-test/ 基于 dist 的测试页
 ```
 
