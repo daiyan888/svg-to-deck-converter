@@ -31,6 +31,7 @@ const ATTR_CAMEL_MAP: Record<string, string> = {
   'image-rendering': 'imageRendering',
   'letter-spacing': 'letterSpacing',
   'lighting-color': 'lightingColor',
+  'line-height': 'lineHeight',
   'marker-end': 'markerEnd',
   'marker-mid': 'markerMid',
   'marker-start': 'markerStart',
@@ -161,4 +162,56 @@ export function parseFontSize(value: string | number | undefined, fallback: numb
   }
   const num = parseFloat(String(value));
   return Number.isNaN(num) ? fallback : num;
+}
+
+/**
+ * 将 CSS/SVG line-height 解析为相对字号的无单位倍数。
+ * 无法解析（含 normal）时返回 undefined。
+ */
+export function parseCssLineHeight(
+  value: string | number | undefined,
+  fontSizePx: number,
+): number | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  const raw = String(value).trim().toLowerCase();
+  if (!raw || raw === 'normal' || raw === 'inherit' || raw === 'unset') {
+    return undefined;
+  }
+
+  if (raw.endsWith('%')) {
+    const n = parseFloat(raw);
+    return Number.isNaN(n) ? undefined : n / 100;
+  }
+
+  const n = parseFloat(raw);
+  if (Number.isNaN(n)) {
+    return undefined;
+  }
+
+  if (raw.endsWith('pt')) {
+    if (fontSizePx <= 0) {
+      return undefined;
+    }
+    return (n * 96) / 72 / fontSizePx;
+  }
+
+  if (raw.endsWith('px')) {
+    if (fontSizePx <= 0) {
+      return undefined;
+    }
+    return n / fontSizePx;
+  }
+
+  if (raw.endsWith('em') || raw.endsWith('rem')) {
+    return n;
+  }
+
+  // 无单位倍数
+  return n;
 }

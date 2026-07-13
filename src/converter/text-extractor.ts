@@ -1,4 +1,9 @@
-import { collectElementProps, formatFontSizePt, parseFontSize } from './attribute-utils.js';
+import {
+  collectElementProps,
+  formatFontSizePt,
+  parseCssLineHeight,
+  parseFontSize,
+} from './attribute-utils.js';
 import { parseTextColor } from './color-utils.js';
 import {
   getAbsoluteAnchor,
@@ -8,10 +13,16 @@ import {
 import { isTextElement } from './svg-tags.js';
 import {
   DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+  DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+  LINE_HEIGHT_RENDER_FACTOR,
   type MultiBlockContainerNode,
+  type TextAlign,
   type TextGradientColorMark,
   type TextMark,
   type TextNode,
+  type VerticalAlign,
 } from '../types/deck.js';
 
 export interface TextExtractContext {
@@ -93,32 +104,105 @@ function adjustTextBox(
   return { left, top };
 }
 
+function mapToTextAlign(raw: string | undefined | null): TextAlign | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const v = raw.trim().toLowerCase();
+  if (v === 'left' || v === 'start') {
+    return 'left';
+  }
+  if (v === 'center' || v === 'middle') {
+    return 'center';
+  }
+  if (v === 'right' || v === 'end') {
+    return 'right';
+  }
+  if (v === 'justify') {
+    return 'justify';
+  }
+  return undefined;
+}
+
 function parseHorizontalAlign(
   el: Element,
   spanStyle: string,
-): 'left' | 'center' | 'right' | undefined {
-  const dataAlign = el.getAttribute('data-horizontal-align')?.toLowerCase();
-  if (dataAlign === 'right') {
-    return 'right';
-  }
-  if (dataAlign === 'center' || dataAlign === 'middle') {
-    return 'center';
-  }
-  if (dataAlign === 'left') {
-    return 'left';
+  textAnchor?: string,
+): TextAlign {
+  const fromData = mapToTextAlign(el.getAttribute('data-horizontal-align'));
+  if (fromData) {
+    return fromData;
   }
 
-  const styleAlign = parseStyleValue(spanStyle, 'text-align');
-  if (styleAlign === 'right') {
-    return 'right';
+  const fromStyle = mapToTextAlign(parseStyleValue(spanStyle, 'text-align'));
+  if (fromStyle) {
+    return fromStyle;
   }
-  if (styleAlign === 'center') {
+
+  const fromAnchor = mapToTextAlign(textAnchor);
+  if (fromAnchor) {
+    return fromAnchor;
+  }
+
+  return DEFAULT_TEXT_STYLE_TEXT_ALIGN;
+}
+
+function mapToVerticalAlign(raw: string | undefined | null): VerticalAlign | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const v = raw.trim().toLowerCase();
+  if (
+    v === 'start' ||
+    v === 'top' ||
+    v === 'flex-start' ||
+    v === 'hanging' ||
+    v === 'text-before-edge' ||
+    v === 'text-top'
+  ) {
+    return 'start';
+  }
+  if (v === 'center' || v === 'middle' || v === 'central') {
     return 'center';
   }
-  if (styleAlign === 'left') {
-    return 'left';
+  if (
+    v === 'end' ||
+    v === 'bottom' ||
+    v === 'flex-end' ||
+    v === 'text-after-edge' ||
+    v === 'text-bottom'
+  ) {
+    return 'end';
   }
   return undefined;
+}
+
+function parseVerticalAlign(
+  el: Element,
+  spanStyle: string,
+  dominantBaseline?: string,
+): VerticalAlign {
+  const fromData = mapToVerticalAlign(el.getAttribute('data-vertical-align'));
+  if (fromData) {
+    return fromData;
+  }
+
+  const fromAlignItems = mapToVerticalAlign(parseStyleValue(spanStyle, 'align-items'));
+  if (fromAlignItems) {
+    return fromAlignItems;
+  }
+
+  const fromVerticalAlign = mapToVerticalAlign(parseStyleValue(spanStyle, 'vertical-align'));
+  if (fromVerticalAlign) {
+    return fromVerticalAlign;
+  }
+
+  const fromBaseline = mapToVerticalAlign(dominantBaseline);
+  if (fromBaseline) {
+    return fromBaseline;
+  }
+
+  return DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN;
 }
 
 function buildTextGradientColorMark(
@@ -137,18 +221,36 @@ function buildTextGradientColorMark(
   };
 }
 
+/**
+ * SVG/CSS 行高 → textStyle.lineHeight。
+ * 渲染时会再乘 LINE_HEIGHT_RENDER_FACTOR，故此处除以该系数以保持视觉一致。
+ */
+function toStoredLineHeight(cssLineHeight: number | undefined): number {
+  if (cssLineHeight == null || !Number.isFinite(cssLineHeight)) {
+    return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
+  }
+  return cssLineHeight / LINE_HEIGHT_RENDER_FACTOR;
+}
+
 function buildMultiBlockContainer(
   text: string,
   fontFamily: string,
   fontSize: number,
-  textAlign?: 'left' | 'center' | 'right',
+  textAlign: TextAlign = DEFAULT_TEXT_STYLE_TEXT_ALIGN,
   color?: string,
   textGradientColor?: string,
+  lineHeight: number = DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  verticalAlign: VerticalAlign = DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
 ): MultiBlockContainerNode {
   const marks: TextMark[] = [
     {
       type: 'textStyle',
-      attrs: { fontFamily, fontSize: formatFontSizePt(fontSize) },
+      attrs: {
+        fontFamily,
+        fontSize: formatFontSizePt(fontSize),
+        lineHeight,
+        textAlign,
+      },
     },
   ];
   const colorMark = buildTextGradientColorMark(color, textGradientColor);
@@ -164,11 +266,11 @@ function buildMultiBlockContainer(
     type: 'multiBlockContainer',
     attrs: {
       padding: DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+      verticalAlign,
     },
     content: [
       {
         type: 'paragraph',
-        ...(textAlign ? { attrs: { textAlign } } : {}),
         content: [textNode],
       },
     ],
@@ -207,6 +309,13 @@ function textElementToCandidate(
       : undefined,
     defaultFontSize,
   );
+  const cssLineHeight = parseCssLineHeight(
+    typeof props.lineHeight === 'string' || typeof props.lineHeight === 'number'
+      ? props.lineHeight
+      : undefined,
+    fontSize,
+  );
+  const lineHeight = toStoredLineHeight(cssLineHeight);
 
   const sizeHint = findSizeHint(el);
   const { width, height } =
@@ -222,6 +331,8 @@ function textElementToCandidate(
   const { left, top } = toDeckCoords(box.left, box.top, viewBox);
   const fill = typeof props.fill === 'string' ? props.fill : undefined;
   const { color, textGradientColor } = parseTextColor({ fill, svgRoot });
+  const textAlign = parseHorizontalAlign(el, '', textAnchor);
+  const verticalAlign = parseVerticalAlign(el, '', dominantBaseline);
 
   return {
     left,
@@ -232,9 +343,11 @@ function textElementToCandidate(
       content,
       fontFamily,
       fontSize,
-      undefined,
+      textAlign,
       color,
       textGradientColor,
+      lineHeight,
+      verticalAlign,
     ),
   };
 }
@@ -253,9 +366,14 @@ function foreignObjectToCandidate(
   }
 
   const style = span?.getAttribute('style') ?? '';
+  const foStyle = el.getAttribute('style') ?? '';
+  const combinedStyle = [foStyle, style].filter(Boolean).join(';');
   const fontSize = parseFontSize(parseStyleValue(style, 'font-size'), defaultFontSize);
   const fontFamily = parseStyleValue(style, 'font-family') ?? defaultFontFamily;
-  const textAlign = parseHorizontalAlign(el, style);
+  const textAlign = parseHorizontalAlign(el, combinedStyle);
+  const verticalAlign = parseVerticalAlign(el, combinedStyle);
+  const cssLineHeight = parseCssLineHeight(parseStyleValue(style, 'line-height'), fontSize);
+  const lineHeight = toStoredLineHeight(cssLineHeight);
 
   const width = parseNumAttr(el, 'width') ?? estimateTextBounds(content, fontSize).width;
   const height = parseNumAttr(el, 'height') ?? estimateTextBounds(content, fontSize).height;
@@ -276,6 +394,8 @@ function foreignObjectToCandidate(
       textAlign,
       color,
       textGradientColor,
+      lineHeight,
+      verticalAlign,
     ),
   };
 }

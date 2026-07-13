@@ -30,3 +30,11 @@ export type {
   TextStyleMark,
   ThemeColorSlot,
 } from '../types/deck.js';
+export {
+  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  LINE_HEIGHT_RENDER_FACTOR,
+  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+  DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+} from '../types/deck.js';
+export type { TextAlign, VerticalAlign } from '../types/deck.js';

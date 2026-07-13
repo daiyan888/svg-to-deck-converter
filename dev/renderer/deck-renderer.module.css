@@ -8,6 +8,7 @@
 .deckNode {
   position: absolute;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .svgLayer {
@@ -18,6 +19,9 @@
 }
 
 .multiBlockContainer {
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   margin: 0;
@@ -27,5 +31,6 @@
 
 .paragraph {
   margin: 0;
-  line-height: 1.2;
+  width: 100%;
+  line-height: 0;
 }

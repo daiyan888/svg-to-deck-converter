@@ -1,9 +1,11 @@
-import type {
-  DeckDocument,
-  DeckNode,
-  MultiBlockContainerNode,
-  TextMark,
-  TextNode,
+import {
+  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+  type DeckDocument,
+  type DeckNode,
+  type MultiBlockContainerNode,
+  type TextMark,
+  type TextNode,
 } from '../../dist/browser/index.js';
 
 export interface TextStyleOverride {
@@ -36,7 +38,12 @@ function applyOverridesToMarks(
     } else {
       next.push({
         type: 'textStyle',
-        attrs: { fontFamily: 'sans-serif', fontSize: overrides.fontSize },
+        attrs: {
+          fontFamily: 'sans-serif',
+          fontSize: overrides.fontSize,
+          lineHeight: DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+          textAlign: DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+        },
       });
     }
   }

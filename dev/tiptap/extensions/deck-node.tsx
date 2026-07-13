@@ -20,9 +20,16 @@ function DeckNodeNodeView({ node }: NodeViewProps) {
         height,
         top,
         left,
+        overflow: 'hidden',
       }}
     >
-      <NodeViewContent />
+      <NodeViewContent
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+        }}
+      />
     </NodeViewWrapper>
   );
 }
@@ -52,7 +59,7 @@ export const DeckNode = Node.create({
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-deck-node': '',
-        style: `position:absolute;box-sizing:border-box;width:${width}px;height:${height}px;top:${top}px;left:${left}px;`,
+        style: `position:absolute;box-sizing:border-box;overflow:hidden;width:${width}px;height:${height}px;top:${top}px;left:${left}px;`,
       }),
       0,
     ];

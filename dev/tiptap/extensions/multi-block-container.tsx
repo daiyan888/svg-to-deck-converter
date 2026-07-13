@@ -5,25 +5,37 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from '@tiptap/react';
-
-const DEFAULT_PADDING = '0px 0px 0px 0px';
+import {
+  DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
+  DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  type VerticalAlign,
+} from 'svg-to-deck-converter';
 
 function MultiBlockContainerNodeView({ node }: NodeViewProps) {
-  const { padding } = node.attrs as { padding: string };
+  const { padding, verticalAlign } = node.attrs as {
+    padding: string;
+    verticalAlign: VerticalAlign;
+  };
 
   return (
     <NodeViewWrapper
       as="div"
+      data-multi-block-container=""
       style={{
         width: '100%',
         height: '100%',
+        boxSizing: 'border-box',
         margin: 0,
         padding,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: verticalAlign ?? DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+        alignContent: verticalAlign ?? DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
         whiteSpace: 'pre-wrap',
         pointerEvents: 'none',
       }}
     >
-      <NodeViewContent />
+      <NodeViewContent style={{ width: '100%', height: 'auto' }} />
     </NodeViewWrapper>
   );
 }
@@ -36,7 +48,8 @@ export const MultiBlockContainer = Node.create({
 
   addAttributes() {
     return {
-      padding: { default: DEFAULT_PADDING },
+      padding: { default: DEFAULT_MULTI_BLOCK_CONTAINER_PADDING },
+      verticalAlign: { default: DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN },
     };
   },
 
@@ -45,12 +58,16 @@ export const MultiBlockContainer = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const { padding } = node.attrs;
+    const { padding, verticalAlign } = node.attrs as {
+      padding: string;
+      verticalAlign: VerticalAlign;
+    };
+    const align = verticalAlign ?? DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN;
     return [
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-multi-block-container': '',
-        style: `white-space:pre-wrap;padding:${padding};`,
+        style: `width:100%;height:100%;box-sizing:border-box;margin:0;display:flex;flex-wrap:wrap;align-items:${align};align-content:${align};white-space:pre-wrap;padding:${padding};`,
       }),
       0,
     ];

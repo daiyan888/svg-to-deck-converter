@@ -1,6 +1,10 @@
 import { useMemo, type CSSProperties } from 'react';
 import {
   buildClrSchemeCssVars,
+  DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+  LINE_HEIGHT_RENDER_FACTOR,
   toThemeCssValue,
   type CommandsItem,
   type DeckDocument,
@@ -9,6 +13,7 @@ import {
   type DeckTheme,
   type MultiBlockContainerNode,
   type ParagraphNode,
+  type TextAlign,
   type TextNode,
 } from '../../dist/browser/index.js';
 import type { TextStyleOverride } from './apply-text-style';
@@ -118,6 +123,7 @@ function textStyle(
   if (textStyleMark) {
     style.fontFamily = textStyleMark.attrs.fontFamily;
     style.fontSize = previewTextStyle?.fontSize ?? textStyleMark.attrs.fontSize;
+    style.lineHeight = 'var(--data-line-height)';
   } else if (previewTextStyle?.fontSize) {
     style.fontSize = previewTextStyle.fontSize;
   }
@@ -153,13 +159,43 @@ function renderText(
   );
 }
 
+function resolveParagraphLineHeight(p: ParagraphNode): number {
+  for (const text of p.content) {
+    const mark = text.marks?.find((m) => m.type === 'textStyle');
+    if (mark?.type === 'textStyle' && typeof mark.attrs.lineHeight === 'number') {
+      return mark.attrs.lineHeight;
+    }
+  }
+  return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
+}
+
+function resolveParagraphTextAlign(p: ParagraphNode): TextAlign {
+  for (const text of p.content) {
+    const mark = text.marks?.find((m) => m.type === 'textStyle');
+    if (mark?.type === 'textStyle' && mark.attrs.textAlign) {
+      return mark.attrs.textAlign;
+    }
+  }
+  return DEFAULT_TEXT_STYLE_TEXT_ALIGN;
+}
+
 function renderParagraph(
   p: ParagraphNode,
   key: number,
   previewTextStyle?: TextStyleOverride | null,
 ) {
+  const lineHeight = resolveParagraphLineHeight(p);
   return (
-    <p key={key} style={{ margin: 0, lineHeight: 1.2, textAlign: p.attrs?.textAlign }}>
+    <p
+      key={key}
+      style={{
+        margin: 0,
+        width: '100%',
+        lineHeight: 0,
+        ['--data-line-height' as string]: lineHeight * LINE_HEIGHT_RENDER_FACTOR,
+        textAlign: resolveParagraphTextAlign(p),
+      }}
+    >
       {p.content.map((t, i) => renderText(t, i, previewTextStyle))}
     </p>
   );
@@ -169,8 +205,22 @@ function renderMultiBlock(
   node: MultiBlockContainerNode,
   previewTextStyle?: TextStyleOverride | null,
 ) {
+  const verticalAlign = node.attrs.verticalAlign ?? DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN;
   return (
-    <div style={{ padding: node.attrs.padding, width: '100%', height: '100%', boxSizing: 'border-box' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: verticalAlign,
+        alignContent: verticalAlign,
+        padding: node.attrs.padding,
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        margin: 0,
+        whiteSpace: 'pre-wrap',
+      }}
+    >
       {node.content.map((p, i) => renderParagraph(p, i, previewTextStyle))}
     </div>
   );

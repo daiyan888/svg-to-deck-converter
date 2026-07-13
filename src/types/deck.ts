@@ -1,10 +1,27 @@
 /** TipTap deck 节点 JSON 结构类型定义 */
 
+/** textStyle.lineHeight 默认值；渲染时 p 的 --data-line-height = lineHeight * 此系数 */
+export const DEFAULT_TEXT_STYLE_LINE_HEIGHT = 1.2;
+/** 渲染系数：CSS 行高 = textStyle.lineHeight × LINE_HEIGHT_RENDER_FACTOR */
+export const LINE_HEIGHT_RENDER_FACTOR = 1.2;
+
+/** textStyle.textAlign 默认值；渲染到 p 的 text-align */
+export type TextAlign = 'left' | 'center' | 'right' | 'justify';
+export const DEFAULT_TEXT_STYLE_TEXT_ALIGN: TextAlign = 'left';
+
+/** multiBlockContainer.verticalAlign；渲染为 align-items */
+export type VerticalAlign = 'start' | 'center' | 'end';
+export const DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN: VerticalAlign = 'start';
+
 export interface TextStyleMark {
   type: 'textStyle';
   attrs: {
     fontFamily: string;
     fontSize: string;
+    /** 逻辑行高，默认 1.2；渲染为 CSS 行高时乘以 LINE_HEIGHT_RENDER_FACTOR */
+    lineHeight: number;
+    /** 水平对齐，渲染到所属 p 的 text-align */
+    textAlign: TextAlign;
   };
 }
 
@@ -26,9 +43,6 @@ export interface TextNode {
 
 export interface ParagraphNode {
   type: 'paragraph';
-  attrs?: {
-    textAlign?: 'left' | 'center' | 'right';
-  };
   content: TextNode[];
 }
 
@@ -38,6 +52,8 @@ export interface MultiBlockContainerNode {
   type: 'multiBlockContainer';
   attrs: {
     padding: string;
+    /** 垂直对齐，渲染为 align-items */
+    verticalAlign: VerticalAlign;
   };
   content: ParagraphNode[];
 }

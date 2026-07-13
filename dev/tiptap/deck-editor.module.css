@@ -13,6 +13,29 @@
   min-height: 0;
 }
 
+/*
+ * TipTap React NodeView 在 deckNode 与 multiBlockContainer 之间插入了
+ * data-node-view-content-react / .react-renderer 等中间层，默认不撑满，
+ * 导致 MBC 的 height:100% 与 align-items 垂直对齐失效。
+ */
+.deckEditor :global([data-deck-node] > [data-node-view-content]),
+.deckEditor :global([data-deck-node] > [data-node-view-content] > [data-node-view-content-react]),
+.deckEditor :global([data-deck-node] > [data-node-view-content] > [data-node-view-content-react] > .react-renderer),
+.deckEditor :global([data-deck-node] > [data-node-view-content] > [data-node-view-content-react] > .react-renderer.node-multiBlockContainer),
+.deckEditor :global([data-deck-node] > [data-node-view-content] > [data-node-view-content-react] > .react-renderer.node-svg) {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* MBC 内容层保持内容高度，才能被 align-items 垂直居中 */
+.deckEditor :global([data-multi-block-container] > [data-node-view-content]),
+.deckEditor :global([data-multi-block-container] [data-node-view-content-react]) {
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+
 /* 悬停预览字号 / 颜色：覆盖 TipTap mark 内联样式，不改文档 */
 .deckEditor[data-preview-font-size] :global([data-text-style]) {
   font-size: var(--deck-preview-font-size) !important;
