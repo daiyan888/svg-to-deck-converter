@@ -1,18 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
-import {
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
-  type TextAlign,
-} from 'svg-to-deck-converter';
-
-const TEXT_ALIGNS = new Set<TextAlign>(['left', 'center', 'right', 'justify']);
-
-function parseTextAlignAttr(raw: string | null): TextAlign {
-  if (raw && TEXT_ALIGNS.has(raw as TextAlign)) {
-    return raw as TextAlign;
-  }
-  return DEFAULT_TEXT_STYLE_TEXT_ALIGN;
-}
+import { DEFAULT_TEXT_STYLE_LINE_HEIGHT } from 'svg-to-deck-converter';
 
 export const DeckTextStyle = Mark.create({
   name: 'textStyle',
@@ -41,16 +28,6 @@ export const DeckTextStyle = Mark.create({
         },
         renderHTML: (attributes) => ({
           'data-line-height': String(attributes.lineHeight ?? DEFAULT_TEXT_STYLE_LINE_HEIGHT),
-        }),
-      },
-      textAlign: {
-        default: DEFAULT_TEXT_STYLE_TEXT_ALIGN,
-        parseHTML: (element) =>
-          parseTextAlignAttr(
-            element.getAttribute('data-text-align') || element.style.textAlign || null,
-          ),
-        renderHTML: (attributes) => ({
-          'data-text-align': String(attributes.textAlign ?? DEFAULT_TEXT_STYLE_TEXT_ALIGN),
         }),
       },
     };

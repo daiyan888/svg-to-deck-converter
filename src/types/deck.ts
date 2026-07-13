@@ -5,9 +5,9 @@ export const DEFAULT_TEXT_STYLE_LINE_HEIGHT = 1.2;
 /** 渲染系数：CSS 行高 = textStyle.lineHeight × LINE_HEIGHT_RENDER_FACTOR */
 export const LINE_HEIGHT_RENDER_FACTOR = 1.2;
 
-/** textStyle.textAlign 默认值；渲染到 p 的 text-align */
+/** paragraph.textAlign 默认值；渲染到 p 的 text-align */
 export type TextAlign = 'left' | 'center' | 'right' | 'justify';
-export const DEFAULT_TEXT_STYLE_TEXT_ALIGN: TextAlign = 'left';
+export const DEFAULT_PARAGRAPH_TEXT_ALIGN: TextAlign = 'left';
 
 /** multiBlockContainer.verticalAlign；渲染为 align-items */
 export type VerticalAlign = 'start' | 'center' | 'end';
@@ -20,8 +20,6 @@ export interface TextStyleMark {
     fontSize: string;
     /** 逻辑行高，默认 1.2；渲染为 CSS 行高时乘以 LINE_HEIGHT_RENDER_FACTOR */
     lineHeight: number;
-    /** 水平对齐，渲染到所属 p 的 text-align */
-    textAlign: TextAlign;
   };
 }
 
@@ -43,6 +41,10 @@ export interface TextNode {
 
 export interface ParagraphNode {
   type: 'paragraph';
+  attrs?: {
+    /** 水平对齐，渲染为 p 的 text-align */
+    textAlign?: TextAlign;
+  };
   content: TextNode[];
 }
 

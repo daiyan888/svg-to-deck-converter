@@ -5,10 +5,7 @@ import type {
   TextMark,
   TextNode,
 } from 'svg-to-deck-converter';
-import {
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
-} from 'svg-to-deck-converter';
+import { DEFAULT_TEXT_STYLE_LINE_HEIGHT } from 'svg-to-deck-converter';
 
 export interface TextStyleOverride {
   fontSize?: string;
@@ -45,7 +42,6 @@ function applyOverridesToMarks(
           fontFamily: 'sans-serif',
           fontSize: overrides.fontSize,
           lineHeight: DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-          textAlign: DEFAULT_TEXT_STYLE_TEXT_ALIGN,
         },
       });
     }

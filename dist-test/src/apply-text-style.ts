@@ -1,6 +1,5 @@
 import {
   DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
   type DeckDocument,
   type DeckNode,
   type MultiBlockContainerNode,
@@ -42,7 +41,6 @@ function applyOverridesToMarks(
           fontFamily: 'sans-serif',
           fontSize: overrides.fontSize,
           lineHeight: DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-          textAlign: DEFAULT_TEXT_STYLE_TEXT_ALIGN,
         },
       });
     }

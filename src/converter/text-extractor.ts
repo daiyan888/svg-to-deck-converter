@@ -14,8 +14,8 @@ import { isTextElement } from './svg-tags.js';
 import {
   DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
   DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_PARAGRAPH_TEXT_ALIGN,
   DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
   LINE_HEIGHT_RENDER_FACTOR,
   type MultiBlockContainerNode,
   type TextAlign,
@@ -144,7 +144,7 @@ function parseHorizontalAlign(
     return fromAnchor;
   }
 
-  return DEFAULT_TEXT_STYLE_TEXT_ALIGN;
+  return DEFAULT_PARAGRAPH_TEXT_ALIGN;
 }
 
 function mapToVerticalAlign(raw: string | undefined | null): VerticalAlign | undefined {
@@ -236,7 +236,7 @@ function buildMultiBlockContainer(
   text: string,
   fontFamily: string,
   fontSize: number,
-  textAlign: TextAlign = DEFAULT_TEXT_STYLE_TEXT_ALIGN,
+  textAlign: TextAlign = DEFAULT_PARAGRAPH_TEXT_ALIGN,
   color?: string,
   textGradientColor?: string,
   lineHeight: number = DEFAULT_TEXT_STYLE_LINE_HEIGHT,
@@ -249,7 +249,6 @@ function buildMultiBlockContainer(
         fontFamily,
         fontSize: formatFontSizePt(fontSize),
         lineHeight,
-        textAlign,
       },
     },
   ];
@@ -271,6 +270,7 @@ function buildMultiBlockContainer(
     content: [
       {
         type: 'paragraph',
+        attrs: { textAlign },
         content: [textNode],
       },
     ],

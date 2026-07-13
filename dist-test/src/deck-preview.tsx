@@ -2,8 +2,8 @@ import { useMemo, type CSSProperties } from 'react';
 import {
   buildClrSchemeCssVars,
   DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_PARAGRAPH_TEXT_ALIGN,
   DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
   LINE_HEIGHT_RENDER_FACTOR,
   toThemeCssValue,
   type CommandsItem,
@@ -13,7 +13,6 @@ import {
   type DeckTheme,
   type MultiBlockContainerNode,
   type ParagraphNode,
-  type TextAlign,
   type TextNode,
 } from '../../dist/browser/index.js';
 import type { TextStyleOverride } from './apply-text-style';
@@ -169,16 +168,6 @@ function resolveParagraphLineHeight(p: ParagraphNode): number {
   return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
 }
 
-function resolveParagraphTextAlign(p: ParagraphNode): TextAlign {
-  for (const text of p.content) {
-    const mark = text.marks?.find((m) => m.type === 'textStyle');
-    if (mark?.type === 'textStyle' && mark.attrs.textAlign) {
-      return mark.attrs.textAlign;
-    }
-  }
-  return DEFAULT_TEXT_STYLE_TEXT_ALIGN;
-}
-
 function renderParagraph(
   p: ParagraphNode,
   key: number,
@@ -193,7 +182,7 @@ function renderParagraph(
         width: '100%',
         lineHeight: 0,
         ['--data-line-height' as string]: lineHeight * LINE_HEIGHT_RENDER_FACTOR,
-        textAlign: resolveParagraphTextAlign(p),
+        textAlign: p.attrs?.textAlign ?? DEFAULT_PARAGRAPH_TEXT_ALIGN,
       }}
     >
       {p.content.map((t, i) => renderText(t, i, previewTextStyle))}

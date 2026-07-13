@@ -2,8 +2,8 @@ import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import {
+  DEFAULT_PARAGRAPH_TEXT_ALIGN,
   DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  DEFAULT_TEXT_STYLE_TEXT_ALIGN,
   LINE_HEIGHT_RENDER_FACTOR,
   type TextAlign,
 } from 'svg-to-deck-converter';
@@ -15,38 +15,45 @@ import { TextGradientColor } from './text-gradient-color';
 import { MultiBlockContainer } from './multi-block-container';
 import { SvgNode } from './svg-node';
 
-function resolveTextStyleAttr<T>(
-  node: ProseMirrorNode,
-  key: 'lineHeight' | 'textAlign',
-  fallback: T,
-): T {
-  let value = fallback;
+const TEXT_ALIGNS = new Set<TextAlign>(['left', 'center', 'right', 'justify']);
+
+function resolveParagraphLineHeight(node: ProseMirrorNode): number {
+  let lineHeight = DEFAULT_TEXT_STYLE_LINE_HEIGHT;
   let found = false;
   node.forEach((child) => {
     if (found) {
       return;
     }
     const mark = child.marks.find((m) => m.type.name === 'textStyle');
-    if (mark && mark.attrs[key] != null) {
-      value = mark.attrs[key] as T;
+    if (mark && typeof mark.attrs.lineHeight === 'number') {
+      lineHeight = mark.attrs.lineHeight;
       found = true;
     }
   });
-  return value;
+  return lineHeight;
+}
+
+function parseTextAlign(raw: string | null): TextAlign {
+  if (raw && TEXT_ALIGNS.has(raw as TextAlign)) {
+    return raw as TextAlign;
+  }
+  return DEFAULT_PARAGRAPH_TEXT_ALIGN;
 }
 
 const StyledParagraph = Paragraph.extend({
+  addAttributes() {
+    return {
+      textAlign: {
+        default: DEFAULT_PARAGRAPH_TEXT_ALIGN,
+        parseHTML: (element) => parseTextAlign(element.style.textAlign || null),
+        renderHTML: () => ({}),
+      },
+    };
+  },
+
   renderHTML({ node, HTMLAttributes }) {
-    const lineHeight = resolveTextStyleAttr(
-      node,
-      'lineHeight',
-      DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-    );
-    const textAlign = resolveTextStyleAttr<TextAlign>(
-      node,
-      'textAlign',
-      DEFAULT_TEXT_STYLE_TEXT_ALIGN,
-    );
+    const textAlign = (node.attrs.textAlign as TextAlign) ?? DEFAULT_PARAGRAPH_TEXT_ALIGN;
+    const lineHeight = resolveParagraphLineHeight(node);
     const dataLineHeight = lineHeight * LINE_HEIGHT_RENDER_FACTOR;
     return [
       'p',
