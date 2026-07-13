@@ -75,11 +75,6 @@ export interface DeckNode {
     height: number;
     top: number;
     left: number;
-    /**
-     * 文本 deckNode（子节点为 multiBlockContainer）固定为 false，禁止换行撑开。
-     * SVG deckNode 不设置该字段。
-     */
-    wrap?: boolean;
   };
   /** 每个 deckNode 只能有一个子节点（svg 或 multiBlockContainer） */
   content: [DeckNodeChild];

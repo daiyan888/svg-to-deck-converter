@@ -198,7 +198,7 @@ function renderDeckNode(
   key: number,
   previewTextStyle?: TextStyleOverride | null,
 ) {
-  const { width, height, top, left, wrap } = node.attrs;
+  const { width, height, top, left } = node.attrs;
   return (
     <div
       key={key}
@@ -208,7 +208,6 @@ function renderDeckNode(
         height,
         top,
         left,
-        whiteSpace: wrap === false ? 'nowrap' : undefined,
         overflow: 'hidden',
       }}
     >

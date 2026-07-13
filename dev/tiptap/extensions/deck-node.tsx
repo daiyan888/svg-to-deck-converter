@@ -2,12 +2,11 @@ import { Node, mergeAttributes, type NodeViewRenderer } from '@tiptap/core';
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 
 function DeckNodeNodeView({ node }: NodeViewProps) {
-  const { width, height, top, left, wrap } = node.attrs as {
+  const { width, height, top, left } = node.attrs as {
     width: number;
     height: number;
     top: number;
     left: number;
-    wrap?: boolean;
   };
 
   return (
@@ -21,7 +20,6 @@ function DeckNodeNodeView({ node }: NodeViewProps) {
         height,
         top,
         left,
-        whiteSpace: wrap === false ? 'nowrap' : undefined,
       }}
     >
       <NodeViewContent />
@@ -41,7 +39,6 @@ export const DeckNode = Node.create({
       height: { default: 0 },
       top: { default: 0 },
       left: { default: 0 },
-      wrap: { default: null },
     };
   },
 
@@ -50,13 +47,12 @@ export const DeckNode = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const { width, height, top, left, wrap } = node.attrs;
-    const wrapStyle = wrap === false ? 'white-space:nowrap;' : '';
+    const { width, height, top, left } = node.attrs;
     return [
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-deck-node': '',
-        style: `position:absolute;box-sizing:border-box;width:${width}px;height:${height}px;top:${top}px;left:${left}px;${wrapStyle}`,
+        style: `position:absolute;box-sizing:border-box;width:${width}px;height:${height}px;top:${top}px;left:${left}px;`,
       }),
       0,
     ];
