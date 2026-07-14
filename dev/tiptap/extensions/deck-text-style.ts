@@ -1,5 +1,4 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
-import { DEFAULT_TEXT_STYLE_LINE_HEIGHT } from 'svg-to-deck-converter';
 
 export const DeckTextStyle = Mark.create({
   name: 'textStyle',
@@ -15,20 +14,6 @@ export const DeckTextStyle = Mark.create({
         default: '14px',
         parseHTML: (element) => element.style.fontSize || '10.5pt',
         renderHTML: (attributes) => ({ fontSize: attributes.fontSize }),
-      },
-      lineHeight: {
-        default: DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-        parseHTML: (element) => {
-          const raw = element.getAttribute('data-line-height');
-          if (!raw) {
-            return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
-          }
-          const n = parseFloat(raw);
-          return Number.isNaN(n) ? DEFAULT_TEXT_STYLE_LINE_HEIGHT : n;
-        },
-        renderHTML: (attributes) => ({
-          'data-line-height': String(attributes.lineHeight ?? DEFAULT_TEXT_STYLE_LINE_HEIGHT),
-        }),
       },
     };
   },

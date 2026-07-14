@@ -14,8 +14,8 @@ import { isTextElement } from './svg-tags.js';
 import {
   DEFAULT_MULTI_BLOCK_CONTAINER_PADDING,
   DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_PARAGRAPH_LINE_HEIGHT,
   DEFAULT_PARAGRAPH_TEXT_ALIGN,
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
   LINE_HEIGHT_RENDER_FACTOR,
   type MultiBlockContainerNode,
   type TextAlign,
@@ -222,12 +222,12 @@ function buildTextGradientColorMark(
 }
 
 /**
- * SVG/CSS 行高 → textStyle.lineHeight。
+ * SVG/CSS 行高 → paragraph.lineHeight。
  * 渲染时会再乘 LINE_HEIGHT_RENDER_FACTOR，故此处除以该系数以保持视觉一致。
  */
 function toStoredLineHeight(cssLineHeight: number | undefined): number {
   if (cssLineHeight == null || !Number.isFinite(cssLineHeight)) {
-    return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
+    return DEFAULT_PARAGRAPH_LINE_HEIGHT;
   }
   return cssLineHeight / LINE_HEIGHT_RENDER_FACTOR;
 }
@@ -239,7 +239,7 @@ function buildMultiBlockContainer(
   textAlign: TextAlign = DEFAULT_PARAGRAPH_TEXT_ALIGN,
   color?: string,
   textGradientColor?: string,
-  lineHeight: number = DEFAULT_TEXT_STYLE_LINE_HEIGHT,
+  lineHeight: number = DEFAULT_PARAGRAPH_LINE_HEIGHT,
   verticalAlign: VerticalAlign = DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
 ): MultiBlockContainerNode {
   const marks: TextMark[] = [
@@ -248,7 +248,6 @@ function buildMultiBlockContainer(
       attrs: {
         fontFamily,
         fontSize: formatFontSizePt(fontSize),
-        lineHeight,
       },
     },
   ];
@@ -270,7 +269,7 @@ function buildMultiBlockContainer(
     content: [
       {
         type: 'paragraph',
-        attrs: { textAlign },
+        attrs: { textAlign, lineHeight },
         content: [textNode],
       },
     ],

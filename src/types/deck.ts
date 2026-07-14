@@ -1,8 +1,8 @@
 /** TipTap deck 节点 JSON 结构类型定义 */
 
-/** textStyle.lineHeight 默认值；渲染时 p 的 --data-line-height = lineHeight * 此系数 */
-export const DEFAULT_TEXT_STYLE_LINE_HEIGHT = 1.2;
-/** 渲染系数：CSS 行高 = textStyle.lineHeight × LINE_HEIGHT_RENDER_FACTOR */
+/** paragraph.lineHeight 默认值；渲染时 p 的 --data-line-height = lineHeight * 此系数 */
+export const DEFAULT_PARAGRAPH_LINE_HEIGHT = 1.2;
+/** 渲染系数：CSS 行高 = paragraph.lineHeight × LINE_HEIGHT_RENDER_FACTOR */
 export const LINE_HEIGHT_RENDER_FACTOR = 1.2;
 
 /** paragraph.textAlign 默认值；渲染到 p 的 text-align */
@@ -18,8 +18,6 @@ export interface TextStyleMark {
   attrs: {
     fontFamily: string;
     fontSize: string;
-    /** 逻辑行高，默认 1.2；渲染为 CSS 行高时乘以 LINE_HEIGHT_RENDER_FACTOR */
-    lineHeight: number;
   };
 }
 
@@ -44,6 +42,8 @@ export interface ParagraphNode {
   attrs?: {
     /** 水平对齐，渲染为 p 的 text-align */
     textAlign?: TextAlign;
+    /** 逻辑行高，默认 1.2；渲染为 CSS 行高时乘以 LINE_HEIGHT_RENDER_FACTOR */
+    lineHeight?: number;
   };
   content: TextNode[];
 }

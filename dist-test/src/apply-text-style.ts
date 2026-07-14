@@ -1,10 +1,9 @@
-import {
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
-  type DeckDocument,
-  type DeckNode,
-  type MultiBlockContainerNode,
-  type TextMark,
-  type TextNode,
+import type {
+  DeckDocument,
+  DeckNode,
+  MultiBlockContainerNode,
+  TextMark,
+  TextNode,
 } from '../../dist/browser/index.js';
 
 export interface TextStyleOverride {
@@ -40,7 +39,6 @@ function applyOverridesToMarks(
         attrs: {
           fontFamily: 'sans-serif',
           fontSize: overrides.fontSize,
-          lineHeight: DEFAULT_TEXT_STYLE_LINE_HEIGHT,
         },
       });
     }

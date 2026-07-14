@@ -6,22 +6,12 @@ import type {
 } from 'svg-to-deck-converter';
 import {
   DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_PARAGRAPH_LINE_HEIGHT,
   DEFAULT_PARAGRAPH_TEXT_ALIGN,
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
   LINE_HEIGHT_RENDER_FACTOR,
 } from 'svg-to-deck-converter';
 import { buildTextColorCss } from '../tiptap/text-color-style';
 import styles from './deck-renderer.module.css';
-
-function resolveParagraphLineHeight(p: ParagraphNode): number {
-  for (const text of p.content) {
-    const mark = text.marks?.find((m) => m.type === 'textStyle');
-    if (mark?.type === 'textStyle' && typeof mark.attrs.lineHeight === 'number') {
-      return mark.attrs.lineHeight;
-    }
-  }
-  return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
-}
 
 function renderTextNode(node: TextNode, key: number) {
   const textStyleMark = node.marks?.find((m) => m.type === 'textStyle');
@@ -50,7 +40,7 @@ function renderTextNode(node: TextNode, key: number) {
 
 function renderParagraph(p: ParagraphNode, key: number) {
   const textAlign = p.attrs?.textAlign ?? DEFAULT_PARAGRAPH_TEXT_ALIGN;
-  const lineHeight = resolveParagraphLineHeight(p);
+  const lineHeight = p.attrs?.lineHeight ?? DEFAULT_PARAGRAPH_LINE_HEIGHT;
   return (
     <p
       key={key}

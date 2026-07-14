@@ -2,8 +2,8 @@ import { useMemo, type CSSProperties } from 'react';
 import {
   buildClrSchemeCssVars,
   DEFAULT_MULTI_BLOCK_VERTICAL_ALIGN,
+  DEFAULT_PARAGRAPH_LINE_HEIGHT,
   DEFAULT_PARAGRAPH_TEXT_ALIGN,
-  DEFAULT_TEXT_STYLE_LINE_HEIGHT,
   LINE_HEIGHT_RENDER_FACTOR,
   toThemeCssValue,
   type CommandsItem,
@@ -158,22 +158,12 @@ function renderText(
   );
 }
 
-function resolveParagraphLineHeight(p: ParagraphNode): number {
-  for (const text of p.content) {
-    const mark = text.marks?.find((m) => m.type === 'textStyle');
-    if (mark?.type === 'textStyle' && typeof mark.attrs.lineHeight === 'number') {
-      return mark.attrs.lineHeight;
-    }
-  }
-  return DEFAULT_TEXT_STYLE_LINE_HEIGHT;
-}
-
 function renderParagraph(
   p: ParagraphNode,
   key: number,
   previewTextStyle?: TextStyleOverride | null,
 ) {
-  const lineHeight = resolveParagraphLineHeight(p);
+  const lineHeight = p.attrs?.lineHeight ?? DEFAULT_PARAGRAPH_LINE_HEIGHT;
   return (
     <p
       key={key}
