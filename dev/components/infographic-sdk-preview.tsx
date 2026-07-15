@@ -3,12 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 import { ZoomableViewport } from './zoomable-viewport';
 import styles from './infographic-sdk-preview.module.css';
 
-const PREVIEW_WIDTH = 960;
-const PREVIEW_HEIGHT = 640;
+const DEFAULT_PREVIEW_WIDTH = 960;
+const DEFAULT_PREVIEW_HEIGHT = 640;
 
 interface InfographicSdkPreviewProps {
   syntax: string;
   template?: string;
+  /** 与转换目标尺寸一致，避免左右预览画布不一致 */
+  width?: number;
+  height?: number;
 }
 
 function waitForInfographicReady(
@@ -35,10 +38,17 @@ function waitForInfographicReady(
   ]);
 }
 
-export function InfographicSdkPreview({ syntax, template }: InfographicSdkPreviewProps) {
+export function InfographicSdkPreview({
+  syntax,
+  template,
+  width = DEFAULT_PREVIEW_WIDTH,
+  height = DEFAULT_PREVIEW_HEIGHT,
+}: InfographicSdkPreviewProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewWidth = width > 0 ? width : DEFAULT_PREVIEW_WIDTH;
+  const previewHeight = height > 0 ? height : DEFAULT_PREVIEW_HEIGHT;
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -80,7 +90,7 @@ export function InfographicSdkPreview({ syntax, template }: InfographicSdkPrevie
       infographic.destroy();
       mount.replaceChildren();
     };
-  }, [syntax]);
+  }, [syntax, previewWidth, previewHeight]);
 
   if (!syntax.trim()) {
     return (
@@ -95,15 +105,15 @@ export function InfographicSdkPreview({ syntax, template }: InfographicSdkPrevie
       {template && <p className={styles.meta}>模板：{template}</p>}
       {error && <div className={styles.error}>{error}</div>}
       <ZoomableViewport
-        contentWidth={PREVIEW_WIDTH}
-        contentHeight={PREVIEW_HEIGHT}
+        contentWidth={previewWidth}
+        contentHeight={previewHeight}
         defaultScale={0.55}
       >
         <div className={styles.stage}>
           <div
             ref={mountRef}
             className={styles.mount}
-            style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
+            style={{ width: previewWidth, height: previewHeight }}
           />
           {loading && <div className={styles.loading}>SDK 渲染中…</div>}
         </div>

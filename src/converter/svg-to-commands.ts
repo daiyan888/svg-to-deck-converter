@@ -42,7 +42,7 @@ function elementWithPreservedContent(el: Element, comp: string): CommandsItem {
   };
 }
 
-function elementToCommand(el: Element, ctx: CommandConvertContext): CommandsItem | null {
+export function elementToCommand(el: Element, ctx: CommandConvertContext): CommandsItem | null {
   const tag = el.tagName.toLowerCase();
   if (isSkippableRoot(tag)) {
     return null;

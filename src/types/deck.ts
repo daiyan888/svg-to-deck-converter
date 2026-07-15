@@ -138,6 +138,12 @@ export interface DeckThemeConfig {
 
 export interface DeckDocumentAttrs {
   theme: DeckThemeConfig;
+  /**
+   * 画布固有宽高（来自源 SVG viewBox），用于预览容器尺寸。
+   * 拆成多块后不能再用 content 外包盒，否则会丢掉 viewBox 边距。
+   */
+  width?: number;
+  height?: number;
 }
 
 export interface DeckDocument {

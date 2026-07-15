@@ -12,6 +12,16 @@ import {
 export const DeckPreviewClrSchemeContext = createContext<DeckTheme | null>(null);
 
 function computeDeckBounds(node: NodeViewProps['node']): { width: number; height: number } {
+  const attrs = node.attrs as { width?: number; height?: number };
+  if (
+    typeof attrs.width === 'number' &&
+    attrs.width > 0 &&
+    typeof attrs.height === 'number' &&
+    attrs.height > 0
+  ) {
+    return { width: attrs.width, height: attrs.height };
+  }
+
   let width = 400;
   let height = 300;
   node.forEach((child) => {
@@ -79,6 +89,8 @@ export const Deck = Node.create({
           return { 'data-theme': JSON.stringify(attributes.theme) };
         },
       },
+      width: { default: null },
+      height: { default: null },
     };
   },
 

@@ -507,7 +507,12 @@ export function ConverterPanel() {
       <div className={styles.row}>
         <section className={`${styles.panel} ${styles.previewPanel}`}>
           <h2 className={styles.panelTitle}>Infographic SDK 渲染预览</h2>
-          <InfographicSdkPreview syntax={sdkPreviewSyntax} template={selectedTemplate} />
+          <InfographicSdkPreview
+            syntax={sdkPreviewSyntax}
+            template={selectedTemplate}
+            width={renderSize.width}
+            height={renderSize.height}
+          />
         </section>
 
         <section className={`${styles.panel} ${styles.previewPanel}`}>

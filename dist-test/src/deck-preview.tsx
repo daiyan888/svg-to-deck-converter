@@ -263,8 +263,16 @@ export function DeckPreview({
 }: DeckPreviewProps) {
   const clrScheme = previewClrScheme ?? document.attrs.theme.clrScheme;
   const cssVars = useMemo(() => buildClrSchemeCssVars(clrScheme), [clrScheme]);
-  const width = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
-  const height = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
+  const contentWidth = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
+  const contentHeight = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
+  const width =
+    typeof document.attrs.width === 'number' && document.attrs.width > 0
+      ? document.attrs.width
+      : contentWidth;
+  const height =
+    typeof document.attrs.height === 'number' && document.attrs.height > 0
+      ? document.attrs.height
+      : contentHeight;
 
   return (
     <div

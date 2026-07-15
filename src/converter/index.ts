@@ -1,11 +1,14 @@
 export { convertSvgToDeck, extractSvgFromHtml } from './svg-to-deck.js';
-export { svgElementToCommands } from './svg-to-commands.js';
+export { svgElementToCommands, elementToCommand } from './svg-to-commands.js';
 export { extractTextBlocks, extractTextDeckNodes } from './text-extractor.js';
+export { collectGraphicBlocks } from './svg-split-blocks.js';
 export {
   applyDeckOffsets,
   applySvgPixelSize,
   computeMeetLayout,
+  estimateNaturalSizeFromDocument,
   finalizeSizedConvertResult,
+  resolveNaturalSizeFromSvg,
   resolveTargetSize,
   scaleConvertResult,
   scaleDeckDocument,

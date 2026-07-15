@@ -82,29 +82,28 @@ function scaleMultiBlockContainer(
   };
 }
 
-function scaleSvgNode(node: SvgNode, target: TargetSize): SvgNode {
+/**
+ * 缩放单个 svg 节点的像素宽高；viewBox（用户坐标）保持不变。
+ * 多块拆分后每个小 svg 只占自己的 bbox，不能再铺满整幅画布。
+ */
+function scaleSvgNode(node: SvgNode, scale: number): SvgNode {
   return {
     ...node,
     attrs: {
       ...node.attrs,
-      width: target.width,
-      height: target.height,
-      // 保留原始 viewBox；默认 preserveAspectRatio=meet，与文本等比缩放一致
+      width: scaleNumber(node.attrs.width, scale),
+      height: scaleNumber(node.attrs.height, scale),
       viewBox: node.attrs.viewBox,
       commands: node.attrs.commands as CommandsItem[],
     },
   };
 }
 
-function scaleDeckNodeChild(
-  child: DeckNodeChild,
-  target: TargetSize,
-  fontScale: number,
-): DeckNodeChild {
+function scaleDeckNodeChild(child: DeckNodeChild, scale: number): DeckNodeChild {
   if (child.type === 'svg') {
-    return scaleSvgNode(child, target);
+    return scaleSvgNode(child, scale);
   }
-  return scaleMultiBlockContainer(child, fontScale);
+  return scaleMultiBlockContainer(child, scale);
 }
 
 /**
@@ -129,65 +128,106 @@ function scaleDeckNode(
   scale: number,
   offsetX: number,
   offsetY: number,
-  target: TargetSize,
 ): DeckNode {
   const child = node.content[0];
-  const isSvg = child?.type === 'svg';
 
   return {
     ...node,
     attrs: {
       ...node.attrs,
-      width: isSvg ? target.width : scaleNumber(node.attrs.width, scale),
-      height: isSvg ? target.height : scaleNumber(node.attrs.height, scale),
-      // SVG 铺满目标画布（内部 meet 留白）；文本按 meet 后的内容区定位
-      top: isSvg ? 0 : scaleNumber(node.attrs.top, scale) + offsetY,
-      left: isSvg ? 0 : scaleNumber(node.attrs.left, scale) + offsetX,
+      width: scaleNumber(node.attrs.width, scale),
+      height: scaleNumber(node.attrs.height, scale),
+      top: scaleNumber(node.attrs.top, scale) + offsetY,
+      left: scaleNumber(node.attrs.left, scale) + offsetX,
     },
-    content: [scaleDeckNodeChild(child, target, scale)],
+    content: [scaleDeckNodeChild(child, scale)],
   };
-}
-
-function findNaturalSize(document: DeckDocument): { width: number; height: number } | null {
-  for (const node of document.content) {
-    const child = node.content[0];
-    if (child?.type === 'svg') {
-      return {
-        width: child.attrs.width,
-        height: child.attrs.height,
-      };
-    }
-  }
-  return null;
 }
 
 /**
- * 将 deck 从 Infographic 固有 viewBox 尺寸适配到目标宽高。
- * 使用与 SVG 默认 `meet` 相同的等比缩放 + 居中留白，保证图形与 multiBlockContainer 对齐。
+ * 从全部 deckNode 的占位估算画布尺寸（无原始 SVG 时的回退）。
+ * 多块拆分后不能再用「第一个 svg 的宽高」——那往往只是一根细线。
  */
-export function scaleDeckDocument(document: DeckDocument, target: TargetSize): DeckDocument {
-  const natural = findNaturalSize(document);
-  if (!natural || natural.width <= 0 || natural.height <= 0) {
+export function estimateNaturalSizeFromDocument(document: DeckDocument): TargetSize | null {
+  let maxRight = 0;
+  let maxBottom = 0;
+  let hasNode = false;
+
+  for (const node of document.content) {
+    hasNode = true;
+    maxRight = Math.max(maxRight, node.attrs.left + node.attrs.width);
+    maxBottom = Math.max(maxBottom, node.attrs.top + node.attrs.height);
+  }
+
+  if (!hasNode || maxRight <= 0 || maxBottom <= 0) {
+    return null;
+  }
+  return { width: maxRight, height: maxBottom };
+}
+
+/**
+ * 从原始 SVG 字符串解析固有画布尺寸（优先于 deckNode 估算）。
+ */
+export function resolveNaturalSizeFromSvg(svgString: string): TargetSize | null {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, 'image/svg+xml');
+    if (doc.querySelector('parsererror')) {
+      return null;
+    }
+    const svgRoot = doc.querySelector('svg');
+    if (!svgRoot) {
+      return null;
+    }
+    const viewBox = parseViewBox(svgRoot);
+    if (viewBox.width <= 0 || viewBox.height <= 0) {
+      return null;
+    }
+    return { width: viewBox.width, height: viewBox.height };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 将 deck 从 Infographic 固有尺寸适配到目标宽高。
+ * 使用与 SVG 默认 `meet` 相同的等比缩放 + 居中留白。
+ * @param natural 固有画布尺寸；不传则从 deckNode 占位估算
+ */
+export function scaleDeckDocument(
+  document: DeckDocument,
+  target: TargetSize,
+  natural?: TargetSize | null,
+): DeckDocument {
+  const resolvedNatural = natural ?? estimateNaturalSizeFromDocument(document);
+  if (!resolvedNatural || resolvedNatural.width <= 0 || resolvedNatural.height <= 0) {
     return document;
   }
-  if (natural.width === target.width && natural.height === target.height) {
+  if (resolvedNatural.width === target.width && resolvedNatural.height === target.height) {
     return document;
   }
 
-  const { scale, offsetX, offsetY } = computeMeetLayout(natural, target);
+  const { scale, offsetX, offsetY } = computeMeetLayout(resolvedNatural, target);
 
   return {
     ...document,
-    content: document.content.map((node) =>
-      scaleDeckNode(node, scale, offsetX, offsetY, target),
-    ),
+    attrs: {
+      ...document.attrs,
+      width: target.width,
+      height: target.height,
+    },
+    content: document.content.map((node) => scaleDeckNode(node, scale, offsetX, offsetY)),
   };
 }
 
-export function scaleConvertResult(result: ConvertResult, target: TargetSize): ConvertResult {
+export function scaleConvertResult(
+  result: ConvertResult,
+  target: TargetSize,
+  natural?: TargetSize | null,
+): ConvertResult {
   return {
     ...result,
-    document: scaleDeckDocument(result.document, target),
+    document: scaleDeckDocument(result.document, target, natural),
   };
 }
 
@@ -237,7 +277,7 @@ export function resolveTargetSize(
   };
 }
 
-/** 在缩放之后再叠加偏移，避免 offset 被一起放大 */
+/** 在缩放之后再叠加偏移，避免 offset 被一起放大；并扩展画布以免裁切 */
 export function applyDeckOffsets(
   document: DeckDocument,
   offsetTop = 0,
@@ -246,8 +286,27 @@ export function applyDeckOffsets(
   if (offsetTop === 0 && offsetLeft === 0) {
     return document;
   }
+
+  const baseWidth =
+    typeof document.attrs.width === 'number' && document.attrs.width > 0
+      ? document.attrs.width
+      : estimateNaturalSizeFromDocument(document)?.width;
+  const baseHeight =
+    typeof document.attrs.height === 'number' && document.attrs.height > 0
+      ? document.attrs.height
+      : estimateNaturalSizeFromDocument(document)?.height;
+
   return {
     ...document,
+    attrs: {
+      ...document.attrs,
+      ...(baseWidth != null
+        ? { width: baseWidth + Math.max(0, offsetLeft) }
+        : {}),
+      ...(baseHeight != null
+        ? { height: baseHeight + Math.max(0, offsetTop) }
+        : {}),
+    },
     content: document.content.map((node) => ({
       ...node,
       attrs: {
@@ -259,19 +318,11 @@ export function applyDeckOffsets(
   };
 }
 
-function findNaturalSizeFromDocument(document: DeckDocument): TargetSize | null {
-  for (const node of document.content) {
-    const child = node.content[0];
-    if (child?.type === 'svg') {
-      return { width: child.attrs.width, height: child.attrs.height };
-    }
-  }
-  return null;
-}
-
 /**
- * 转换后按目标宽高适配 deck（等比 meet），并把 SVG 的 width/height 写成目标像素。
+ * 转换后按目标宽高适配 deck（等比 meet），并把源 SVG 的 width/height 写成目标像素。
  * 调用方应先以 offset=0 转换，再由本函数在缩放后统一叠加 offset（作用于全部 deckNode）。
+ *
+ * 固有尺寸优先取原始 SVG 的 viewBox（整幅画布），不能用拆分后的单个小 svg bbox。
  */
 export function finalizeSizedConvertResult(
   svg: string,
@@ -282,14 +333,15 @@ export function finalizeSizedConvertResult(
   const offsetTop = options.offsetTop ?? 0;
   const offsetLeft = options.offsetLeft ?? 0;
 
-  const natural = findNaturalSizeFromDocument(result.document);
+  const natural =
+    resolveNaturalSizeFromSvg(svg) ?? estimateNaturalSizeFromDocument(result.document);
   const target = natural ? resolveTargetSize(size, natural) : null;
 
   let document = result.document;
   let nextSvg = svg;
 
-  if (target) {
-    document = scaleConvertResult({ ...result, document }, target).document;
+  if (target && natural) {
+    document = scaleConvertResult({ ...result, document }, target, natural).document;
     nextSvg = applySvgPixelSize(svg, target);
   }
 

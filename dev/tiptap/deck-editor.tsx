@@ -21,6 +21,14 @@ interface DeckEditorProps {
 }
 
 function computeDeckSize(document: DeckDocument): { width: number; height: number } {
+  if (
+    typeof document.attrs.width === 'number' &&
+    document.attrs.width > 0 &&
+    typeof document.attrs.height === 'number' &&
+    document.attrs.height > 0
+  ) {
+    return { width: document.attrs.width, height: document.attrs.height };
+  }
   const width = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
   const height = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
   return { width, height };

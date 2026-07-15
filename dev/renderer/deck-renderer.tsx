@@ -44,8 +44,16 @@ interface DeckRendererProps {
 }
 
 export function DeckRenderer({ document, className }: DeckRendererProps) {
-  const maxWidth = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
-  const maxHeight = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
+  const contentWidth = Math.max(...document.content.map((n) => n.attrs.left + n.attrs.width), 400);
+  const contentHeight = Math.max(...document.content.map((n) => n.attrs.top + n.attrs.height), 300);
+  const maxWidth =
+    typeof document.attrs?.width === 'number' && document.attrs.width > 0
+      ? document.attrs.width
+      : contentWidth;
+  const maxHeight =
+    typeof document.attrs?.height === 'number' && document.attrs.height > 0
+      ? document.attrs.height
+      : contentHeight;
   const theme = document.attrs?.theme ?? DEFAULT_DECK_THEME_CONFIG;
   const cssVars = buildClrSchemeCssVars(theme.clrScheme);
 
