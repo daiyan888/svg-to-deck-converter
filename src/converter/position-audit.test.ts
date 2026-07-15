@@ -55,10 +55,10 @@ describe('position audit chart-bar-plain-text', () => {
       return t === '2021年';
     });
 
-    expect(bars.length).toBe(1); // 四根柱整组一块
+    expect(bars.length).toBe(4); // 档 2：每柱一块
     expect(labels.length).toBe(1);
 
-    // 柱组顶边应对齐第一根柱；年标签 top 应落在第一根柱附近（不是整组中心）
+    // 第一根柱顶边应与「2021年」标签接近
     const barTop = bars[0].attrs.top;
     const labelTop = labels[0].attrs.top;
     expect(Math.abs(barTop - labelTop)).toBeLessThan(20);

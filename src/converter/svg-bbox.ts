@@ -1,3 +1,5 @@
+import { isAntvEditorChrome } from './svg-tags.js';
+
 /** 轴对齐包围盒（SVG 用户坐标） */
 export interface BBox {
   minX: number;
@@ -472,6 +474,9 @@ function strokePadding(el: Element): number {
 export function estimateLocalBBox(el: Element, skipText = false): BBox | null {
   const tag = el.tagName.toLowerCase();
   if (tag === 'defs' || tag === 'style' || tag === 'script' || tag === 'title' || tag === 'desc') {
+    return null;
+  }
+  if (isAntvEditorChrome(el)) {
     return null;
   }
   if (skipText && (tag === 'text' || tag === 'tspan' || tag === 'foreignobject')) {

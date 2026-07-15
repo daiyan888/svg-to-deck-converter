@@ -90,3 +90,12 @@ export function isSkippableRoot(tagName: string): boolean {
   const tag = tagName.toLowerCase();
   return tag === 'svg' || tag === 'style' || tag === 'script' || tag === 'title' || tag === 'desc';
 }
+
+/**
+ * AntV Infographic 编辑态控件（btn-add / btn-remove 等），
+ * 会以半透明 20×20 rect 画在图上，转换 deck 时应丢弃。
+ */
+export function isAntvEditorChrome(el: Element): boolean {
+  const type = el.getAttribute('data-element-type') ?? '';
+  return type.startsWith('btn-');
+}

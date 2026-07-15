@@ -63,23 +63,24 @@ describe('cross-template coordinate invariants (synthetic AntV-like SVG)', () =>
       (n) => isSvg(n) && JSON.stringify(n.content[0].attrs.commands).includes('"comp":"rect"'),
     );
     const labelA = result.document.content.find((n) => textOf(n) === 'ItemA');
-    // 同层叶子 rect 整组保留 → 1 个 svg 块含两根柱
-    expect(rects.length).toBe(1);
+    // 同层 filled rect → 每柱一块
+    expect(rects.length).toBe(2);
     expect(labelA).toBeTruthy();
 
     // ItemA FO world y = 40+0 = 40；相对 viewBox → top = 40 - minY
     expect(labelA!.attrs.top).toBeCloseTo(40 - minY, 5);
     expect(labelA!.attrs.left).toBeCloseTo(20 - minX, 5);
 
-    // 柱组顶边 = 第一根柱 world y=40
+    // 第一根柱 world y=40
     expect(rects[0].attrs.top).toBeCloseTo(40 - minY, 5);
     expect(rects[0].attrs.left).toBeCloseTo(120 - minX, 5);
+    expect(rects[1].attrs.top).toBeCloseTo(80 - minY, 5);
 
-    // defs 引用已拷贝
+    // defs 引用已拷贝到带渐变的那一块
     const cmds = JSON.stringify(rects[0].content[0].attrs.commands);
     expect(cmds).toContain('defs');
-    expect(cmds).toMatch(/url\(#dn0_/);
-    expect(cmds).toContain('#00C9C9');
+    expect(cmds).toMatch(/url\(#dn\d+_/);
+    expect(JSON.stringify(rects[1].content[0].attrs.commands)).toContain('#00C9C9');
   });
 
   it('page width/height meet-scale preserves relative alignment', () => {
@@ -94,7 +95,7 @@ describe('cross-template coordinate invariants (synthetic AntV-like SVG)', () =>
       (n) => isSvg(n) && JSON.stringify(n.content[0].attrs.commands).includes('"comp":"rect"'),
     );
     const labelA = finalized.result.document.content.find((n) => textOf(n) === 'ItemA');
-    expect(rects.length).toBe(1);
+    expect(rects.length).toBe(2);
     expect(Math.abs(rects[0].attrs.top - labelA!.attrs.top)).toBeLessThan(1);
   });
 

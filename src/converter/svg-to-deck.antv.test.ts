@@ -35,8 +35,8 @@ describe('convertSvgToDeck with AntV SSR svg', () => {
       (n) => n.content[0].type === 'multiBlockContainer',
     ).length;
 
-    // 粗粒度：网格 / 柱组 / 轴线 等少数几块即可
-    expect(svgCount).toBeGreaterThanOrEqual(2);
+    // 档 2：每柱一块 + 网格/轴合并，总量仍可控
+    expect(svgCount).toBeGreaterThanOrEqual(5);
     expect(svgCount).toBeLessThan(20);
     expect(textCount).toBeGreaterThan(3);
     expect(result.stats.textNodeCount).toBe(textCount);

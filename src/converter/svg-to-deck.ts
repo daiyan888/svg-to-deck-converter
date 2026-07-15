@@ -14,6 +14,7 @@ import {
   buildLocalDefsCommand,
   collectReferencedDefIdsFromCommands,
   estimateFilterPadding,
+  extractIdRefsFromValue,
   rewriteCommandsIds,
 } from './svg-defs.js';
 import { collectGraphicBlocks } from './svg-split-blocks.js';
@@ -82,6 +83,29 @@ function isEmptyGraphicCommand(item: CommandsItem | null): boolean {
   return item.children.every((child) => isEmptyGraphicCommand(child));
 }
 
+/** 去掉引用不到 symbol/defs 的 <use>，避免空 use 在 TipTap 里显示成小方块 */
+function stripUnresolvedUses(
+  item: CommandsItem,
+  defsIndex: Map<string, Element>,
+): CommandsItem | null {
+  if (item.comp === 'use') {
+    const href = item.href ?? item.xlinkHref;
+    if (typeof href !== 'string') return null;
+    const ids = extractIdRefsFromValue(href);
+    if (ids.length === 0 || !ids.some((id) => defsIndex.has(id))) {
+      return null;
+    }
+    return item;
+  }
+  if (!item.children?.length) {
+    return item;
+  }
+  const children = item.children
+    .map((child) => stripUnresolvedUses(child, defsIndex))
+    .filter((child): child is CommandsItem => child != null);
+  return { ...item, ...(children.length > 0 ? { children } : { children: [] }) };
+}
+
 function buildSvgDeckNode(
   blockEl: Element,
   blockIndex: number,
@@ -101,7 +125,11 @@ function buildSvgDeckNode(
   }
 
   const wrapped = wrapWithAncestorTransforms(blockEl, rawCommand!);
-  let graphicCommands: CommandsItem[] = [wrapped];
+  const cleaned = stripUnresolvedUses(wrapped, defsIndex);
+  if (isEmptyGraphicCommand(cleaned)) {
+    return null;
+  }
+  let graphicCommands: CommandsItem[] = [cleaned!];
 
   const referencedIds = collectReferencedDefIdsFromCommands(graphicCommands, defsIndex);
   const { defsCommand, idMap } = buildLocalDefsCommand(

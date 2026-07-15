@@ -31,7 +31,6 @@ function findComp(commands: CommandsItem[], comp: string): CommandsItem | undefi
 
 describe('convertSvgToDeck block split', () => {
   it('splits sibling shapes into multiple svg deckNodes', () => {
-    // 顶层兄弟叶子仍会各成一块；同父 g 下的多 rect 则整组保留（见下一条）
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
       <rect x="10" y="10" width="40" height="30" fill="#1783FF"/>
       <rect x="80" y="20" width="50" height="40" fill="#00C9C9"/>
@@ -48,7 +47,7 @@ describe('convertSvgToDeck block split', () => {
     expect(result.document.content[1].attrs.left).not.toBe(result.document.content[0].attrs.left);
   });
 
-  it('keeps sibling leaf shapes under one g as a single svg block', () => {
+  it('splits sibling filled rects under one g into one deckNode each', () => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
       <g id="infographic-container">
         <g>
@@ -61,11 +60,125 @@ describe('convertSvgToDeck block split', () => {
 
     const result = convertSvgToDeck(svg, { extractText: false });
     const svgs = svgNodes(result);
+    expect(svgs.length).toBe(3);
+    expect(JSON.stringify(svgs[0].attrs.commands)).toContain('#1783FF');
+    expect(JSON.stringify(svgs[1].attrs.commands)).toContain('#00C9C9');
+    expect(JSON.stringify(svgs[2].attrs.commands)).toContain('#F0884D');
+  });
+
+  it('keeps grid stroke paths merged but splits pie leaders one-per-line', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+      <g id="infographic-container">
+        <g id="grid">
+          <path d="M10 10 L10 100" stroke="#262626" fill="none"/>
+          <path d="M50 10 L50 100" stroke="#262626" fill="none"/>
+          <path d="M90 10 L90 100" stroke="#262626" fill="none"/>
+        </g>
+        <g id="leaders">
+          <path d="M100 50 L120 30 L180 30" stroke="#1783FF" fill="none"/>
+          <path d="M100 80 L120 100 L180 100" stroke="#00C9C9" fill="none"/>
+        </g>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    expect(svgs.length).toBe(3);
+    const grid = svgs.find((s) => (JSON.stringify(s.attrs.commands).match(/"comp":"path"/g) ?? []).length >= 3);
+    expect(grid).toBeTruthy();
+    expect(JSON.stringify(svgs.map((s) => s.attrs.commands))).toContain('#1783FF');
+    expect(JSON.stringify(svgs.map((s) => s.attrs.commands))).toContain('#00C9C9');
+  });
+
+  it('keeps mixed line+area series as one block but splits markers', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+      <g id="infographic-container">
+        <g>
+          <path d="M10 50 L50 30 L90 40" stroke="#1783FF" fill="none"/>
+          <path d="M10 90 L10 50 L50 30 L90 40 L90 90 Z" stroke="none" fill="#1783FF33"/>
+        </g>
+        <g>
+          <ellipse cx="10" cy="50" rx="3" ry="3" fill="#1783FF"/>
+          <ellipse cx="50" cy="30" rx="3" ry="3" fill="#00C9C9"/>
+        </g>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    expect(svgs.length).toBe(3);
+    const series = svgs.find((s) => (JSON.stringify(s.attrs.commands).match(/"comp":"path"/g) ?? []).length === 2);
+    expect(series).toBeTruthy();
+  });
+
+  it('keeps card body + thin accent rect as one block', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+      <g id="infographic-container">
+        <g>
+          <rect x="0" y="0" width="200" height="60" fill="#ffffff"/>
+          <rect x="197" y="0" width="3" height="60" fill="#1783FF"/>
+        </g>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
     expect(svgs.length).toBe(1);
     const cmds = JSON.stringify(svgs[0].attrs.commands);
+    expect(cmds).toContain('#ffffff');
     expect(cmds).toContain('#1783FF');
-    expect(cmds).toContain('#00C9C9');
-    expect(cmds).toContain('#F0884D');
+  });
+
+  it('drops AntV editor chrome btn-add/btn-remove rects', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+      <g id="infographic-container">
+        <rect x="10" y="10" width="40" height="30" fill="#1783FF"/>
+        <rect fill="#F9C0C0" fill-opacity="0.3" width="20" height="20" data-indexes="0" data-element-type="btn-remove" x="100" y="100"/>
+        <rect fill="#B9EBCA" fill-opacity="0.3" width="20" height="20" data-indexes="1" data-element-type="btn-add" x="200" y="100"/>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    expect(svgs.length).toBe(1);
+    const cmds = JSON.stringify(svgs.map((s) => s.attrs.commands));
+    expect(cmds).toContain('#1783FF');
+    expect(cmds).not.toContain('btn-add');
+    expect(cmds).not.toContain('btn-remove');
+    expect(cmds).not.toContain('#F9C0C0');
+    expect(cmds).not.toContain('#B9EBCA');
+  });
+
+  it('strips AntV path width/height metadata from commands', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <path d="M0,0 L50,0 L50,50 Z" fill="#1783FF" width="280" height="280"/>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    const path = findComp(svgs[0].attrs.commands, 'path');
+    expect(path).toBeTruthy();
+    expect(path?.width).toBeUndefined();
+    expect(path?.height).toBeUndefined();
+  });
+
+  it('sanitizes defs ids that contain hash for HTML-embedded svg', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="#1783ff-badge" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#1783FF"/>
+          <stop offset="100%" stop-color="#74b5ff"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="40" cy="40" rx="16" ry="16" fill="url(##1783ff-badge)"/>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    const cmds = JSON.stringify(svgs[0].attrs.commands);
+    expect(cmds).toContain('dn0_1783ff-badge');
+    expect(cmds).not.toMatch(/id":"dn0_#/);
+    expect(cmds).toContain('url(#dn0_1783ff-badge)');
   });
 
   it('copies referenced defs into each block with rewritten ids', () => {

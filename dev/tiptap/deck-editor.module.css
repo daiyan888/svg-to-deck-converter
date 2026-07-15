@@ -26,6 +26,17 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+/* 独立 svg deckNode：避免 inline 基线缝 / 默认描边框被看成「小方块」 */
+.deckEditor :global([data-deck-node] svg) {
+  display: block;
+  overflow: visible;
+  background: transparent;
 }
 
 /* MBC 内容层保持内容高度，才能被 align-items 垂直居中 */

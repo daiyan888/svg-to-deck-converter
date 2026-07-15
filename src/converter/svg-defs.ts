@@ -163,6 +163,14 @@ function rewriteCommandIds(item: CommandsItem, idMap: Map<string, string>): Comm
 }
 
 /**
+ * AntV 部分渐变 id 字面量带 `#`（如 id="#1783ff-badge"，fill="url(##1783ff-badge)"）。
+ * `#` 在 HTML 内嵌 SVG 的 id / url(#…) 中不合法，会导致填充失败并出现灰块占位。
+ */
+export function sanitizeDefId(id: string): string {
+  return id.replace(/#/g, '');
+}
+
+/**
  * 将引用到的 defs 转为带唯一 id 前缀的 local defs command，
  * 并返回用于改写图形命令引用的 idMap。
  */
@@ -175,7 +183,7 @@ export function buildLocalDefsCommand(
   const idMap = new Map<string, string>();
   for (const id of referencedIds) {
     if (defsIndex.has(id)) {
-      idMap.set(id, `${idPrefix}${id}`);
+      idMap.set(id, `${idPrefix}${sanitizeDefId(id)}`);
     }
   }
 

@@ -1,5 +1,5 @@
 import { collectElementProps } from './attribute-utils.js';
-import { isSkippableRoot, isTextElement, resolveComp } from './svg-tags.js';
+import { isAntvEditorChrome, isSkippableRoot, isTextElement, resolveComp } from './svg-tags.js';
 import type { CommandsItem } from '../types/deck.js';
 
 export interface CommandConvertContext {
@@ -45,6 +45,9 @@ function elementWithPreservedContent(el: Element, comp: string): CommandsItem {
 export function elementToCommand(el: Element, ctx: CommandConvertContext): CommandsItem | null {
   const tag = el.tagName.toLowerCase();
   if (isSkippableRoot(tag)) {
+    return null;
+  }
+  if (isAntvEditorChrome(el)) {
     return null;
   }
 
@@ -98,8 +101,38 @@ export function elementToCommand(el: Element, ctx: CommandConvertContext): Comma
   // AntV 线状 path 常只写 stroke、不写 fill；SVG 默认 fill=black。
   // 独立渲染时补 fill=none，并补默认 strokeWidth，避免线看起来「消失」。
   normalizeStrokeLineArt(command, tag, props);
+  scrubAntvGeometryProps(command, tag);
 
   return command;
+}
+
+/**
+ * AntV 会在 path/ellipse 等上塞 width/height（饼盘 280×280 等元数据），
+ * 写入独立 svg deckNode 后，部分环境下会表现为莫名小方块/占位盒。
+ */
+function scrubAntvGeometryProps(command: CommandsItem, tag: string): void {
+  if (
+    tag === 'path' ||
+    tag === 'line' ||
+    tag === 'polyline' ||
+    tag === 'polygon'
+  ) {
+    delete command.width;
+    delete command.height;
+    delete command.x;
+    delete command.y;
+  }
+  if (tag === 'circle' || tag === 'ellipse') {
+    delete command.width;
+    delete command.height;
+    if (command.cx !== undefined || command.cy !== undefined) {
+      delete command.x;
+      delete command.y;
+    }
+  }
+  if (command.strokeDasharray === '') {
+    delete command.strokeDasharray;
+  }
 }
 
 /** 描边线艺：无 fill 时显式 none；无 strokeWidth 时补 1 */

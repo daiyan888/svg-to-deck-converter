@@ -42,7 +42,7 @@ describe('path arc bbox', () => {
 });
 
 describe('chart-pie-compact-card conversion', () => {
-  it('keeps pie disk roughly circular (no arc clipping)', async () => {
+  it('splits pie sectors and keeps arc radius in each sector bbox', async () => {
     const svg = await renderToString({
       template: 'chart-pie-compact-card',
       data: {
@@ -63,24 +63,29 @@ describe('chart-pie-compact-card conversion', () => {
 
     const root = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('svg')!;
     const blocks = collectGraphicBlocks(root, true);
-    const pieBlock = blocks.find((b) => b.querySelectorAll('path').length >= 4);
-    expect(pieBlock).toBeTruthy();
+    // 档 2：每扇区一块；弧 bbox 仍须覆盖半径（避免裁切）
+    const sectorBlocks = blocks.filter(
+      (b) => b.tagName.toLowerCase() === 'path' && (b.getAttribute('d') ?? '').includes('A140'),
+    );
+    expect(sectorBlocks.length).toBeGreaterThanOrEqual(4);
 
-    const world = estimateWorldBBox(pieBlock!, true)!;
-    // 半径约 140 → 直径约 280；旧逻辑只有 ~245 会裁切扇区
-    expect(bboxWidth(world)).toBeGreaterThan(270);
-    expect(bboxHeight(world)).toBeGreaterThan(270);
-    expect(Math.abs(bboxWidth(world) - bboxHeight(world))).toBeLessThan(20);
+    for (const sector of sectorBlocks) {
+      const world = estimateWorldBBox(sector, true)!;
+      expect(bboxWidth(world)).toBeGreaterThan(50);
+      expect(bboxHeight(world)).toBeGreaterThan(50);
+    }
 
     const deck = convertSvgToDeck(svg, { extractText: true });
-    const pieNode = deck.document.content.find((n) => {
+    const sectorNodes = deck.document.content.filter((n) => {
       const c = n.content[0];
       if (c?.type !== 'svg') return false;
       const cmds = JSON.stringify(c.attrs.commands);
-      return (cmds.match(/"comp":"path"/g) ?? []).length >= 4 && cmds.includes('A140');
+      return cmds.includes('A140') && (cmds.match(/"comp":"path"/g) ?? []).length === 1;
     });
-    expect(pieNode).toBeTruthy();
-    expect(pieNode!.attrs.width).toBeGreaterThan(270);
-    expect(pieNode!.attrs.height).toBeGreaterThan(270);
+    expect(sectorNodes.length).toBeGreaterThanOrEqual(4);
+    for (const node of sectorNodes) {
+      expect(node.attrs.width).toBeGreaterThan(50);
+      expect(node.attrs.height).toBeGreaterThan(50);
+    }
   }, 60000);
 });
