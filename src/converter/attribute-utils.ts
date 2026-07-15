@@ -1,4 +1,4 @@
-/** 将 SVG 属性名转为 React camelCase */
+/** 将 SVG 属性名转为 React camelCase（仅 presentation / 需 kebab 的属性） */
 const ATTR_CAMEL_MAP: Record<string, string> = {
   'accent-height': 'accentHeight',
   'alignment-baseline': 'alignmentBaseline',
@@ -78,6 +78,11 @@ const ATTR_CAMEL_MAP: Record<string, string> = {
   class: 'className',
 };
 
+/** React camelCase → SVG/HTML 属性名（仅 ATTR_CAMEL_MAP 内的 presentation 属性） */
+const ATTR_KEBAB_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(ATTR_CAMEL_MAP).map(([kebab, camel]) => [camel, kebab]),
+);
+
 function toCamelCase(name: string): string {
   if (ATTR_CAMEL_MAP[name]) {
     return ATTR_CAMEL_MAP[name];
@@ -86,6 +91,17 @@ function toCamelCase(name: string): string {
     return name;
   }
   return name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+/**
+ * 将 commands 中的 camelCase 属性名还原为 SVG/HTML 属性名。
+ *
+ * 只映射 presentation 属性（如 strokeWidth → stroke-width）。
+ * 保留 SVG/SMIL 本身即为 camelCase 的属性（maskUnits、attributeName、
+ * gradientUnits、repeatCount 等），避免盲目 kebab 化导致 mask/gradient/动画失效。
+ */
+export function svgAttrNameFromCamel(name: string): string {
+  return ATTR_KEBAB_MAP[name] ?? name;
 }
 
 function parseAttrValue(raw: string): string | number | boolean {

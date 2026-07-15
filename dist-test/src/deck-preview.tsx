@@ -5,6 +5,7 @@ import {
   DEFAULT_PARAGRAPH_LINE_HEIGHT,
   DEFAULT_PARAGRAPH_TEXT_ALIGN,
   LINE_HEIGHT_RENDER_FACTOR,
+  svgAttrNameFromCamel,
   toThemeCssValue,
   type CommandsItem,
   type DeckDocument,
@@ -39,40 +40,8 @@ const VOID_ELEMENTS = new Set([
   'image',
 ]);
 
-const ATTR_KEBAB_MAP: Record<string, string> = {
-  className: 'class',
-  fillOpacity: 'fill-opacity',
-  fillRule: 'fill-rule',
-  strokeOpacity: 'stroke-opacity',
-  strokeWidth: 'stroke-width',
-  strokeLinecap: 'stroke-linecap',
-  strokeLinejoin: 'stroke-linejoin',
-  strokeDasharray: 'stroke-dasharray',
-  strokeDashoffset: 'stroke-dashoffset',
-  clipPath: 'clip-path',
-  clipRule: 'clip-rule',
-  fontFamily: 'font-family',
-  fontSize: 'font-size',
-  fontWeight: 'font-weight',
-  textAnchor: 'text-anchor',
-  dominantBaseline: 'dominant-baseline',
-  xlinkHref: 'xlink:href',
-  stopColor: 'stop-color',
-  stopOpacity: 'stop-opacity',
-};
-
 function escapeAttr(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}
-
-function toKebabCase(name: string): string {
-  if (ATTR_KEBAB_MAP[name]) {
-    return ATTR_KEBAB_MAP[name];
-  }
-  if (!name.includes('-') && /[A-Z]/.test(name)) {
-    return name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-  }
-  return name;
 }
 
 function resolveColorAttr(key: string, value: string | number | boolean): string | number | boolean {
@@ -90,7 +59,9 @@ function commandToMarkup(item: CommandsItem): string {
       continue;
     }
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      attrs.push(`${toKebabCase(key)}="${escapeAttr(String(resolveColorAttr(key, value)))}"`);
+      attrs.push(
+        `${svgAttrNameFromCamel(key)}="${escapeAttr(String(resolveColorAttr(key, value)))}"`,
+      );
     }
   }
   const open = attrs.length ? `<${comp} ${attrs.join(' ')}` : `<${comp}`;

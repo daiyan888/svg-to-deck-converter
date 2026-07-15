@@ -1,6 +1,7 @@
 import { parseSyntax, type SyntaxError } from '@antv/infographic';
 import { convertSvgToDeck } from '../converter/svg-to-deck.js';
 import { finalizeSizedConvertResult } from '../converter/scale-deck.js';
+import { normalizeInfographicSyntax } from '../normalize-infographic-syntax.js';
 import type { ConvertOptions, ConvertResult } from '../types/deck.js';
 import {
   renderInfographicSvg,
@@ -24,7 +25,7 @@ export async function renderAndConvertFromSyntax(
   options: ConvertOptions = {},
   size: RenderInfographicSize = {},
 ): Promise<PipelineResult> {
-  const trimmed = syntax.trim();
+  const trimmed = normalizeInfographicSyntax(syntax);
   if (!trimmed) {
     throw new Error('Syntax 不能为空');
   }

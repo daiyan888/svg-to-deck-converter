@@ -6,6 +6,7 @@ import { getCategoryId } from './gallery/categories.js';
 import { fetchGallerySyntax } from './gallery/fetch-gallery-syntax.js';
 import { renderInfographicSvg } from './gallery/render-gallery-svg.js';
 import { renderAndConvertFromSyntax } from './gallery/pipeline.js';
+import { normalizeInfographicSyntax } from './normalize-infographic-syntax.js';
 import { buildDeckThemeFromInfographic } from './theme/build-theme-from-infographic.js';
 import type { ConvertOptions, ConvertResult, DeckDocument, DeckThemeConfig } from './types/deck.js';
 
@@ -195,13 +196,15 @@ export async function convertInfographicFromSyntax(
   input: ConvertInfographicFromSyntaxInput | string,
   convertOptions?: ConvertOptions,
 ): Promise<ConvertInfographicResult> {
-  const syntax = typeof input === 'string' ? input : input.syntax;
+  const syntax = normalizeInfographicSyntax(
+    typeof input === 'string' ? input : input.syntax,
+  );
   const size =
     typeof input === 'string'
       ? {}
       : { width: input.width, height: input.height };
 
-  const parsed = parseSyntax(syntax.trim());
+  const parsed = parseSyntax(syntax);
   const themeOptions =
     typeof input === 'string'
       ? resolveThemeConvertOptions(

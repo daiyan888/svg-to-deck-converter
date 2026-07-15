@@ -1,3 +1,5 @@
+import { normalizeInfographicSyntax } from '../normalize-infographic-syntax.js';
+
 const GALLERY_ORIGIN = 'https://infographic.antv.vision';
 
 function getGalleryPageUrl(slug: string): string {
@@ -9,7 +11,7 @@ export function extractSyntaxFromGalleryHtml(html: string): string {
   if (!match?.[1]) {
     throw new Error('未在 Gallery 页面中找到 syntax（pre.sr-only）');
   }
-  return match[1].trim();
+  return normalizeInfographicSyntax(match[1]);
 }
 
 export async function fetchGallerySyntax(slug: string): Promise<string> {

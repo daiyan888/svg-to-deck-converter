@@ -1,4 +1,8 @@
-import { toThemeCssValue, type CommandsItem } from 'svg-to-deck-converter';
+import {
+  svgAttrNameFromCamel,
+  toThemeCssValue,
+  type CommandsItem,
+} from 'svg-to-deck-converter';
 
 /** 可能携带主题色槽的 SVG 属性 */
 const COLOR_ATTRS = new Set([
@@ -44,28 +48,6 @@ const VOID_ELEMENTS = new Set([
   'feTurbulence',
 ]);
 
-const ATTR_KEBAB_MAP: Record<string, string> = {
-  className: 'class',
-  fillOpacity: 'fill-opacity',
-  fillRule: 'fill-rule',
-  strokeOpacity: 'stroke-opacity',
-  strokeWidth: 'stroke-width',
-  strokeLinecap: 'stroke-linecap',
-  strokeLinejoin: 'stroke-linejoin',
-  strokeDasharray: 'stroke-dasharray',
-  strokeDashoffset: 'stroke-dashoffset',
-  clipPath: 'clip-path',
-  clipRule: 'clip-rule',
-  fontFamily: 'font-family',
-  fontSize: 'font-size',
-  fontWeight: 'font-weight',
-  textAnchor: 'text-anchor',
-  dominantBaseline: 'dominant-baseline',
-  xlinkHref: 'xlink:href',
-  stopColor: 'stop-color',
-  stopOpacity: 'stop-opacity',
-};
-
 function escapeAttr(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -73,20 +55,10 @@ function escapeAttr(value: string): string {
     .replace(/</g, '&lt;');
 }
 
-function toKebabCase(name: string): string {
-  if (ATTR_KEBAB_MAP[name]) {
-    return ATTR_KEBAB_MAP[name];
-  }
-  if (!name.includes('-') && /[A-Z]/.test(name)) {
-    return name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-  }
-  return name;
-}
-
 function attrsToString(attrs: Record<string, string | number | boolean>): string {
   return Object.entries(attrs)
     .filter(([key]) => key !== 'key')
-    .map(([key, value]) => `${toKebabCase(key)}="${escapeAttr(String(value))}"`)
+    .map(([key, value]) => `${svgAttrNameFromCamel(key)}="${escapeAttr(String(value))}"`)
     .join(' ');
 }
 

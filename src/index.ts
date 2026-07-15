@@ -9,6 +9,10 @@ export type {
 } from './convert-infographic-to-deck.js';
 
 export {
+  decodeHtmlEntities,
+  normalizeInfographicSyntax,
+} from './normalize-infographic-syntax.js';
+export {
   validateInfographicData,
   validateInfographicInput,
   validateInfographicSyntax,
@@ -35,6 +39,7 @@ export {
   scaleConvertResult,
   scaleDeckDocument,
 } from './converter/index.js';
+export { svgAttrNameFromCamel } from './converter/attribute-utils.js';
 export type { TargetSize } from './converter/index.js';
 export type {
   CommandsItem,

@@ -1,5 +1,6 @@
 import { getTemplates, parseSyntax, type SyntaxError } from '@antv/infographic';
 import { getCategoryId } from './gallery/categories.js';
+import { normalizeInfographicSyntax } from './normalize-infographic-syntax.js';
 
 export type ValidationIssueCode =
   | 'empty'
@@ -304,7 +305,7 @@ export function validateInfographicSyntax(syntax: unknown): ValidationResult {
     return { valid: false, errors, warnings };
   }
 
-  const trimmed = syntax.trim();
+  const trimmed = normalizeInfographicSyntax(syntax);
   if (!trimmed) {
     pushError(errors, 'syntax', 'syntax 不能为空', 'empty');
     return { valid: false, errors, warnings };
