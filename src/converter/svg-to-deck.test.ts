@@ -31,6 +31,7 @@ function findComp(commands: CommandsItem[], comp: string): CommandsItem | undefi
 
 describe('convertSvgToDeck block split', () => {
   it('splits sibling shapes into multiple svg deckNodes', () => {
+    // 顶层兄弟叶子仍会各成一块；同父 g 下的多 rect 则整组保留（见下一条）
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
       <rect x="10" y="10" width="40" height="30" fill="#1783FF"/>
       <rect x="80" y="20" width="50" height="40" fill="#00C9C9"/>
@@ -45,6 +46,26 @@ describe('convertSvgToDeck block split', () => {
     expect(texts.length).toBe(1);
     expect(result.document.content[0].attrs.width).toBeGreaterThan(0);
     expect(result.document.content[1].attrs.left).not.toBe(result.document.content[0].attrs.left);
+  });
+
+  it('keeps sibling leaf shapes under one g as a single svg block', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+      <g id="infographic-container">
+        <g>
+          <rect x="10" y="10" width="40" height="30" fill="#1783FF"/>
+          <rect x="10" y="50" width="60" height="30" fill="#00C9C9"/>
+          <rect x="10" y="90" width="80" height="30" fill="#F0884D"/>
+        </g>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: false });
+    const svgs = svgNodes(result);
+    expect(svgs.length).toBe(1);
+    const cmds = JSON.stringify(svgs[0].attrs.commands);
+    expect(cmds).toContain('#1783FF');
+    expect(cmds).toContain('#00C9C9');
+    expect(cmds).toContain('#F0884D');
   });
 
   it('copies referenced defs into each block with rewritten ids', () => {
@@ -112,5 +133,31 @@ describe('convertSvgToDeck block split', () => {
     // 应带有祖先 translate(0,40)
     const hasAncestor = JSON.stringify(cmds0).includes('translate(0, 40)');
     expect(hasAncestor).toBe(true);
+  });
+
+  it('interleaves svg and text by source SVG document order', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
+      <g id="infographic-container">
+        <rect id="back" x="0" y="0" width="200" height="120" fill="#eee"/>
+        <text x="10" y="20" font-size="12">early-text</text>
+        <rect id="mid" x="20" y="40" width="80" height="30" fill="#1783FF"/>
+        <rect id="front" x="60" y="50" width="80" height="30" fill="#00C9C9"/>
+        <text x="100" y="100" font-size="12">late-text</text>
+      </g>
+    </svg>`;
+
+    const result = convertSvgToDeck(svg, { extractText: true });
+    const labels = result.document.content.map((n) => {
+      const child = n.content[0];
+      if (child.type === 'multiBlockContainer') {
+        return child.content[0]?.content[0]?.text ?? '';
+      }
+      const cmds = JSON.stringify(child.attrs.commands);
+      if (cmds.includes('#eee')) return 'back';
+      if (cmds.includes('#1783FF')) return 'mid';
+      if (cmds.includes('#00C9C9')) return 'front';
+      return 'svg';
+    });
+    expect(labels).toEqual(['back', 'early-text', 'mid', 'front', 'late-text']);
   });
 });

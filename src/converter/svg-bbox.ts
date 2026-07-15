@@ -161,7 +161,117 @@ function localBBoxFromPoints(points: string | null): BBox | null {
   return isValidBBox(box) ? box : null;
 }
 
-/** 粗略解析 path d，用路径点/控制点估计包围盒（对曲线足够用于定位） */
+const TWO_PI = Math.PI * 2;
+
+function vectorAngle(ux: number, uy: number, vx: number, vy: number): number {
+  const n = Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy);
+  if (n === 0) return 0;
+  const cos = Math.min(1, Math.max(-1, (ux * vx + uy * vy) / n));
+  const ang = Math.acos(cos);
+  return ux * vy - uy * vx < 0 ? -ang : ang;
+}
+
+function isThetaOnArc(theta: number, start: number, delta: number): boolean {
+  const eps = 1e-6;
+  let t = theta - start;
+  if (delta >= 0) {
+    while (t < 0) t += TWO_PI;
+    while (t > TWO_PI) t -= TWO_PI;
+    return t <= delta + eps;
+  }
+  while (t > 0) t -= TWO_PI;
+  while (t < -TWO_PI) t += TWO_PI;
+  return t >= delta - eps;
+}
+
+/**
+ * SVG 椭圆弧端点参数 → 包围盒极值点（含端点）。
+ * 仅用端点会漏掉弧凸出（饼图扇区被裁切的根因）。
+ * @see https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+ */
+export function includeEllipticalArcBBox(
+  include: (px: number, py: number) => void,
+  x1: number,
+  y1: number,
+  rxIn: number,
+  ryIn: number,
+  phiDeg: number,
+  largeArc: number,
+  sweep: number,
+  x2: number,
+  y2: number,
+): void {
+  include(x1, y1);
+  include(x2, y2);
+
+  let rx = Math.abs(rxIn);
+  let ry = Math.abs(ryIn);
+  if (rx === 0 || ry === 0 || (x1 === x2 && y1 === y2)) {
+    return;
+  }
+
+  const phi = (phiDeg * Math.PI) / 180;
+  const cosPhi = Math.cos(phi);
+  const sinPhi = Math.sin(phi);
+
+  const dx = (x1 - x2) / 2;
+  const dy = (y1 - y2) / 2;
+  const x1p = cosPhi * dx + sinPhi * dy;
+  const y1p = -sinPhi * dx + cosPhi * dy;
+
+  let rxSq = rx * rx;
+  let rySq = ry * ry;
+  const x1pSq = x1p * x1p;
+  const y1pSq = y1p * y1p;
+  const lambda = x1pSq / rxSq + y1pSq / rySq;
+  if (lambda > 1) {
+    const s = Math.sqrt(lambda);
+    rx *= s;
+    ry *= s;
+    rxSq = rx * rx;
+    rySq = ry * ry;
+  }
+
+  const sign = largeArc !== sweep ? 1 : -1;
+  let sq = (rxSq * rySq - rxSq * y1pSq - rySq * x1pSq) / (rxSq * y1pSq + rySq * x1pSq);
+  sq = Math.max(0, sq);
+  const coef = sign * Math.sqrt(sq);
+  const cxp = (coef * (rx * y1p)) / ry;
+  const cyp = (coef * -(ry * x1p)) / rx;
+
+  const cx = cosPhi * cxp - sinPhi * cyp + (x1 + x2) / 2;
+  const cy = sinPhi * cxp + cosPhi * cyp + (y1 + y2) / 2;
+
+  const start = vectorAngle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+  let delta = vectorAngle(
+    (x1p - cxp) / rx,
+    (y1p - cyp) / ry,
+    (-x1p - cxp) / rx,
+    (-y1p - cyp) / ry,
+  );
+  if (!sweep && delta > 0) delta -= TWO_PI;
+  if (sweep && delta < 0) delta += TWO_PI;
+
+  const pointAt = (theta: number) => {
+    const cosT = Math.cos(theta);
+    const sinT = Math.sin(theta);
+    include(
+      cx + rx * cosT * cosPhi - ry * sinT * sinPhi,
+      cy + rx * cosT * sinPhi + ry * sinT * cosPhi,
+    );
+  };
+
+  // 旋转椭圆在 x/y 方向的极值参数角
+  const tx = Math.atan2(-ry * sinPhi, rx * cosPhi);
+  const ty = Math.atan2(ry * cosPhi, rx * sinPhi);
+  for (const theta of [tx, tx + Math.PI, ty, ty + Math.PI]) {
+    if (isThetaOnArc(theta, start, delta)) {
+      pointAt(theta);
+    }
+  }
+}
+
+/** 解析 path d，用路径点/控制点/弧极值估计包围盒 */
 export function estimatePathBBox(d: string | null | undefined): BBox | null {
   if (!d?.trim()) return null;
 
@@ -245,16 +355,18 @@ export function estimatePathBBox(d: string | null | undefined): BBox | null {
       x = x2;
       y = y2;
     } else if (lower === 'a') {
-      read(); // rx
-      read(); // ry
-      read(); // angle
-      read(); // large-arc
-      read(); // sweep
+      const rx = read();
+      const ry = read();
+      const angle = read();
+      const largeArc = read();
+      const sweep = read();
       const px = read();
       const py = read();
-      x = abs ? px : x + px;
-      y = abs ? py : y + py;
-      include(x, y);
+      const nx = abs ? px : x + px;
+      const ny = abs ? py : y + py;
+      includeEllipticalArcBBox(include, x, y, rx, ry, angle, largeArc, sweep, nx, ny);
+      x = nx;
+      y = ny;
     } else {
       // 未知命令，跳过后续数字
       while (i < tokens.length && !/^[a-zA-Z]$/.test(tokens[i])) {
@@ -338,10 +450,19 @@ function localElementBBox(el: Element): BBox | null {
 function strokePadding(el: Element): number {
   const sw = parseNum(el.getAttribute('stroke-width'), 0);
   const stroke = el.getAttribute('stroke');
-  if (!stroke || stroke === 'none') {
-    return sw > 0 ? sw / 2 : 0;
+  const styleStroke = (el as SVGElement).style?.stroke;
+  const hasStroke =
+    (stroke && stroke !== 'none') ||
+    (typeof styleStroke === 'string' && styleStroke !== '' && styleStroke !== 'none');
+
+  if (!hasStroke && sw <= 0) {
+    return 0;
   }
-  return Math.max(sw, 1) / 2;
+
+  // SVG 默认 stroke-width=1；描边以路径居中，需至少半宽。
+  // 再多留 1px：拆成独立 deckNode 后 overflow:hidden 极易把 1px 高/宽的线裁没。
+  const half = Math.max(sw > 0 ? sw : 1, 1) / 2;
+  return half + 1;
 }
 
 /**

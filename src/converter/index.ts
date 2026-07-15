@@ -3,6 +3,11 @@ export { svgElementToCommands, elementToCommand } from './svg-to-commands.js';
 export { extractTextBlocks, extractTextDeckNodes } from './text-extractor.js';
 export { collectGraphicBlocks } from './svg-split-blocks.js';
 export {
+  compareDocumentOrder,
+  mergeByDocumentPaintOrder,
+  sortByDocumentOrder,
+} from './deck-paint-order.js';
+export {
   applyDeckOffsets,
   applySvgPixelSize,
   computeMeetLayout,

@@ -20,7 +20,8 @@ function DeckNodeNodeView({ node }: NodeViewProps) {
         height,
         top,
         left,
-        overflow: 'hidden',
+        // visible：细描边（坐标轴横线）不被 overflow 裁掉
+        overflow: 'visible',
       }}
     >
       <NodeViewContent
@@ -59,7 +60,7 @@ export const DeckNode = Node.create({
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-deck-node': '',
-        style: `position:absolute;box-sizing:border-box;overflow:hidden;width:${width}px;height:${height}px;top:${top}px;left:${left}px;`,
+        style: `position:absolute;box-sizing:border-box;overflow:visible;width:${width}px;height:${height}px;top:${top}px;left:${left}px;`,
       }),
       0,
     ];

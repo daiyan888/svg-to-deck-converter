@@ -237,7 +237,7 @@ function renderDeckNode(
         height,
         top,
         left,
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
       {node.content[0] ? renderChild(node.content[0], previewTextStyle) : null}

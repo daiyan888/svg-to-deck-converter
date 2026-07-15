@@ -17,6 +17,7 @@ import {
   rewriteCommandsIds,
 } from './svg-defs.js';
 import { collectGraphicBlocks } from './svg-split-blocks.js';
+import { mergeByDocumentPaintOrder, type PaintOrderItem } from './deck-paint-order.js';
 import { buildColorSlotLookup } from '../theme/build-theme-from-infographic.js';
 import { DEFAULT_DECK_THEME_CONFIG } from '../theme/deck-theme.js';
 import { tokenizeDeckDocumentColors } from '../theme/tokenize-colors.js';
@@ -40,6 +41,18 @@ const DEFAULT_OPTIONS: Required<Omit<ConvertOptions, 'theme'>> & Pick<ConvertOpt
 };
 
 const MIN_BLOCK_SIZE = 1;
+/** 带描边的细线至少占这么多像素，避免 overflow 裁掉 stroke */
+const MIN_STROKED_SPAN = 3;
+
+function elementHasStroke(el: Element): boolean {
+  const stroke = el.getAttribute('stroke');
+  if (stroke && stroke !== 'none') return true;
+  const sw = el.getAttribute('stroke-width');
+  if (sw && parseFloat(sw) > 0) return true;
+  const style = (el as SVGElement).style;
+  if (style?.stroke && style.stroke !== 'none') return true;
+  return false;
+}
 
 function findSvgRoot(doc: Document): SVGSVGElement | null {
   return doc.querySelector('svg');
@@ -113,19 +126,19 @@ function buildSvgDeckNode(
     box = expandBBox(box, filterPad);
   }
 
-  // 避免 0 尺寸导致无法选中
-  let width = Math.max(bboxWidth(box), MIN_BLOCK_SIZE);
-  let height = Math.max(bboxHeight(box), MIN_BLOCK_SIZE);
-  // 若宽或高被抬到 MIN，保持中心大致不变
+  // 避免 0 尺寸；细描边再抬一点，否则 1px 横/竖线会被 overflow:hidden 裁没（X 轴典型问题）
+  const minSpan = elementHasStroke(blockEl) ? MIN_STROKED_SPAN : MIN_BLOCK_SIZE;
+  let width = Math.max(bboxWidth(box), minSpan);
+  let height = Math.max(bboxHeight(box), minSpan);
   let minX = box.minX;
   let minY = box.minY;
-  if (bboxWidth(box) < MIN_BLOCK_SIZE) {
-    minX = box.minX - (MIN_BLOCK_SIZE - bboxWidth(box)) / 2;
-    width = MIN_BLOCK_SIZE;
+  if (bboxWidth(box) < minSpan) {
+    minX = box.minX - (minSpan - bboxWidth(box)) / 2;
+    width = minSpan;
   }
-  if (bboxHeight(box) < MIN_BLOCK_SIZE) {
-    minY = box.minY - (MIN_BLOCK_SIZE - bboxHeight(box)) / 2;
-    height = MIN_BLOCK_SIZE;
+  if (bboxHeight(box) < minSpan) {
+    minY = box.minY - (minSpan - bboxHeight(box)) / 2;
+    height = minSpan;
   }
 
   // svg.viewBox 仍用 SVG 用户坐标；deckNode.left/top 与文字一致，相对根 viewBox 原点
@@ -153,7 +166,7 @@ function buildSvgDeckNode(
 
 /**
  * 将 SVG 字符串转换为 TipTap deck 文档 JSON。
- * 图形按 item / 叶子元素拆成多个 svg deckNode；文字仍提取为 multiBlockContainer。
+ * 图形按偏粗粒度拆成 svg deckNode（item `<g>` / 装饰整组），文字仍提取为 multiBlockContainer。
  * 每个小 svg 仅拷贝其引用到的 defs，并改写 id 避免冲突。
  */
 export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}): ConvertResult {
@@ -181,46 +194,15 @@ export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}
   const defsIndex = buildDefsIndex(svgRoot);
 
   const blocks = collectGraphicBlocks(svgRoot, opts.extractText);
-  const deckNodes: DeckNode[] = [];
+  const paintItems: Array<PaintOrderItem<DeckNode>> = [];
 
   if (blocks.length === 0) {
     // 回退：整图一个 svg（兼容无分组的简单 SVG）
     const commands = svgElementToCommands(svgRoot, cmdCtx);
     // 整图模式下 defs 已在 commands 内，无需再拆
-    deckNodes.push({
-      type: 'deckNode',
-      attrs: {
-        width: viewBox.width,
-        height: viewBox.height,
-        top: opts.offsetTop,
-        left: opts.offsetLeft,
-      },
-      content: [
-        {
-          type: 'svg',
-          attrs: {
-            width: viewBox.width,
-            height: viewBox.height,
-            viewBox: viewBox.viewBox,
-            commands,
-          },
-        },
-      ],
-    });
-  } else {
-    let blockIndex = 0;
-    for (const blockEl of blocks) {
-      const node = buildSvgDeckNode(blockEl, blockIndex, opts, defsIndex, viewBox, cmdCtx);
-      if (node) {
-        deckNodes.push(node);
-        blockIndex += 1;
-      }
-    }
-
-    // 拆完后若一个图形都没有（例如纯文本图），仍给一个空壳避免 deck 无节点
-    if (deckNodes.length === 0 && !opts.extractText) {
-      const commands = svgElementToCommands(svgRoot, cmdCtx);
-      deckNodes.push({
+    paintItems.push({
+      source: svgRoot,
+      node: {
         type: 'deckNode',
         attrs: {
           width: viewBox.width,
@@ -239,6 +221,43 @@ export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}
             },
           },
         ],
+      },
+    });
+  } else {
+    let blockIndex = 0;
+    for (const blockEl of blocks) {
+      const node = buildSvgDeckNode(blockEl, blockIndex, opts, defsIndex, viewBox, cmdCtx);
+      if (node) {
+        paintItems.push({ source: blockEl, node });
+        blockIndex += 1;
+      }
+    }
+
+    // 拆完后若一个图形都没有（例如纯文本图），仍给一个空壳避免 deck 无节点
+    if (paintItems.length === 0 && !opts.extractText) {
+      const commands = svgElementToCommands(svgRoot, cmdCtx);
+      paintItems.push({
+        source: svgRoot,
+        node: {
+          type: 'deckNode',
+          attrs: {
+            width: viewBox.width,
+            height: viewBox.height,
+            top: opts.offsetTop,
+            left: opts.offsetLeft,
+          },
+          content: [
+            {
+              type: 'svg',
+              attrs: {
+                width: viewBox.width,
+                height: viewBox.height,
+                viewBox: viewBox.viewBox,
+                commands,
+              },
+            },
+          ],
+        },
       });
     }
   }
@@ -252,18 +271,24 @@ export function convertSvgToDeck(svgString: string, options: ConvertOptions = {}
       textCtx,
     );
     for (const item of textCandidates) {
-      deckNodes.push({
-        type: 'deckNode',
-        attrs: {
-          width: item.width,
-          height: item.height,
-          top: item.top + opts.offsetTop,
-          left: item.left + opts.offsetLeft,
+      paintItems.push({
+        source: item.sourceElement,
+        node: {
+          type: 'deckNode',
+          attrs: {
+            width: item.width,
+            height: item.height,
+            top: item.top + opts.offsetTop,
+            left: item.left + opts.offsetLeft,
+          },
+          content: [item.multiBlockContainer],
         },
-        content: [item.multiBlockContainer],
       });
     }
   }
+
+  // 叠放：严格按源 SVG 文档序交错（底色 → 早文字 → 柱 → 晚文字）
+  const deckNodes = mergeByDocumentPaintOrder(paintItems);
 
   const theme = opts.theme ?? DEFAULT_DECK_THEME_CONFIG;
   let document: DeckDocument = {

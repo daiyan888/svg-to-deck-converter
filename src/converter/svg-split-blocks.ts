@@ -22,6 +22,11 @@ function isShapeLeaf(el: Element): boolean {
   return SHAPE_TAGS.has(el.tagName.toLowerCase());
 }
 
+function isGroupLike(el: Element): boolean {
+  const tag = el.tagName.toLowerCase();
+  return tag === 'g' || tag === 'a';
+}
+
 function isTextNode(el: Element): boolean {
   const tag = el.tagName.toLowerCase();
   return isTextElement(tag) || tag === 'foreignobject';
@@ -36,7 +41,6 @@ export function isTextOnlySubtree(el: Element): boolean {
 
   const children = getElementChildren(el);
   if (children.length === 0) {
-    // 空 g：视为无图形
     return tag === 'g' || tag === 'a';
   }
 
@@ -61,17 +65,42 @@ function graphicChildren(el: Element, skipTextOnly: boolean): Element[] {
   });
 }
 
-/**
- * 是否继续拆分子节点：多个图形子节点时拆开，细到 item / 叶子 shape。
- */
-function shouldSplitChildren(kids: Element[]): boolean {
-  return kids.length > 1;
+/** 仅描边、无实心填充的线状图形（path/line/polyline） */
+export function isStrokeLineArtLeaf(el: Element): boolean {
+  const tag = el.tagName.toLowerCase();
+  if (tag !== 'path' && tag !== 'line' && tag !== 'polyline') {
+    return false;
+  }
+  const stroke = el.getAttribute('stroke');
+  if (!stroke || stroke === 'none') {
+    return false;
+  }
+  const fill = el.getAttribute('fill');
+  if (fill && fill !== 'none') {
+    return false;
+  }
+  return true;
 }
 
 /**
- * 收集应各自成为一个 svg deckNode 的图形块元素。
- * - 多个兄弟图形 / item `<g>` 时继续往下拆
- * - `skipTextOnly=true` 时跳过纯文本子树（文字走 extractTextDeckNodes）
+ * 是否继续拆分子节点（偏粗粒度，避免拆到每根柱/每条线）：
+ * - 多个 item 级 `<g>` → 拆开（可单独选中/移动）
+ * - 同层全是叶子 shape（柱子们、图标 paths）→ 不拆，整组一块
+ * - 纯描边线艺（网格、坐标轴+刻度）→ 不拆
+ */
+function shouldSplitChildren(kids: Element[]): boolean {
+  if (kids.length <= 1) return false;
+  if (kids.every(isStrokeLineArtLeaf)) return false;
+  if (kids.every(isShapeLeaf)) return false;
+
+  const groupKids = kids.filter(isGroupLike);
+  // 至少 2 个分组子节点才按 item 拆
+  return groupKids.length > 1;
+}
+
+/**
+ * 收集应各自成为一个 svg deckNode 的图形块。
+ * 粒度：item `<g>` 级；装饰层 / 同层叶子图形整组保留。文字仍走 extractText。
  */
 export function collectGraphicBlocks(svgRoot: SVGSVGElement, skipTextOnly: boolean): Element[] {
   const blocks: Element[] = [];
@@ -101,7 +130,7 @@ export function collectGraphicBlocks(svgRoot: SVGSVGElement, skipTextOnly: boole
       return;
     }
 
-    if (tag !== 'g' && tag !== 'a' && tag !== 'svg') {
+    if (!isGroupLike(el) && tag !== 'svg') {
       if (hasGraphicContent(el)) {
         blocks.push(el);
       }
@@ -120,17 +149,17 @@ export function collectGraphicBlocks(svgRoot: SVGSVGElement, skipTextOnly: boole
       return;
     }
 
-    // 单一子节点：若子节点仍是可拆的 g，继续下钻；否则整块输出
+    // 单一分组子节点且其下仍有多个 item 组 → 继续下钻
     const only = kids[0];
     if (
-      (only.tagName.toLowerCase() === 'g' || only.tagName.toLowerCase() === 'a') &&
-      graphicChildren(only, skipTextOnly).length > 1
+      kids.length === 1 &&
+      isGroupLike(only) &&
+      shouldSplitChildren(graphicChildren(only, skipTextOnly))
     ) {
       visit(only);
       return;
     }
 
-    // 叶子 item 组：整组作为一个块（内部文本在转 commands 时会被 skip）
     if (hasGraphicContent(el)) {
       blocks.push(el);
     }

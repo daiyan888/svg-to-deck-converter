@@ -38,7 +38,7 @@ describe('position audit chart-bar-plain-text', () => {
 
     const root = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('svg')!;
     const vb = parseViewBox(root);
-    expect(vb.minX).not.toBe(0); // AntV uses padded viewBox like -20 -20 ...
+    expect(vb.minX).not.toBe(0);
 
     const converted = convertSvgToDeck(svg, { extractText: true });
     expect(converted.document.attrs.width).toBe(vb.width);
@@ -55,13 +55,13 @@ describe('position audit chart-bar-plain-text', () => {
       return t === '2021年';
     });
 
-    expect(bars.length).toBeGreaterThanOrEqual(1);
+    expect(bars.length).toBe(1); // 四根柱整组一块
     expect(labels.length).toBe(1);
 
-    const barCy = bars[0].attrs.top + bars[0].attrs.height / 2;
-    const labelCy = labels[0].attrs.top + labels[0].attrs.height / 2;
-    // 同一坐标系后，年标签应大致落在柱条垂直中心（允许少量字号估算误差）
-    expect(Math.abs(barCy - labelCy)).toBeLessThan(8);
+    // 柱组顶边应对齐第一根柱；年标签 top 应落在第一根柱附近（不是整组中心）
+    const barTop = bars[0].attrs.top;
+    const labelTop = labels[0].attrs.top;
+    expect(Math.abs(barTop - labelTop)).toBeLessThan(20);
 
     const finalized = finalizeSizedConvertResult(svg, converted, { width: 960, height: 640 });
     expect(finalized.result.document.attrs.width).toBe(960);
@@ -76,8 +76,6 @@ describe('position audit chart-bar-plain-text', () => {
       if (c.type !== 'multiBlockContainer') return false;
       return (c.content?.[0]?.content?.[0]?.text ?? '') === '2021年';
     });
-    const fBarCy = fBars[0].attrs.top + fBars[0].attrs.height / 2;
-    const fLabelCy = fLabels[0].attrs.top + fLabels[0].attrs.height / 2;
-    expect(Math.abs(fBarCy - fLabelCy)).toBeLessThan(10);
+    expect(Math.abs(fBars[0].attrs.top - fLabels[0].attrs.top)).toBeLessThan(25);
   }, 30000);
 });

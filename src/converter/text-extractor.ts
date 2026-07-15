@@ -35,6 +35,8 @@ export interface TextDeckNodeCandidate {
   width: number;
   height: number;
   multiBlockContainer: MultiBlockContainerNode;
+  /** 源 text / foreignObject，用于按 SVG 文档序排 deck.content */
+  sourceElement: Element;
 }
 
 function getDirectText(el: Element): string {
@@ -348,6 +350,7 @@ function textElementToCandidate(
       lineHeight,
       verticalAlign,
     ),
+    sourceElement: el,
   };
 }
 
@@ -396,6 +399,7 @@ function foreignObjectToCandidate(
       lineHeight,
       verticalAlign,
     ),
+    sourceElement: el,
   };
 }
 

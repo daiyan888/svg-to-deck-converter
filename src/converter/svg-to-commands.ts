@@ -89,11 +89,41 @@ export function elementToCommand(el: Element, ctx: CommandConvertContext): Comma
 
   ctx.commandCount += 1;
 
-  return {
+  const command: CommandsItem = {
     comp,
     ...props,
     ...(children.length > 0 ? { children } : {}),
   };
+
+  // AntV 线状 path 常只写 stroke、不写 fill；SVG 默认 fill=black。
+  // 独立渲染时补 fill=none，并补默认 strokeWidth，避免线看起来「消失」。
+  normalizeStrokeLineArt(command, tag, props);
+
+  return command;
+}
+
+/** 描边线艺：无 fill 时显式 none；无 strokeWidth 时补 1 */
+function normalizeStrokeLineArt(
+  command: CommandsItem,
+  tag: string,
+  props: Record<string, string | number | boolean>,
+): void {
+  const isLineTag = tag === 'path' || tag === 'line' || tag === 'polyline';
+  if (!isLineTag) return;
+
+  const stroke = props.stroke;
+  if (typeof stroke !== 'string' || stroke === '' || stroke === 'none') {
+    return;
+  }
+
+  const fill = props.fill;
+  if (fill === undefined || fill === null || fill === '') {
+    command.fill = 'none';
+  }
+
+  if (props.strokeWidth === undefined && props['stroke-width'] === undefined) {
+    command.strokeWidth = 1;
+  }
 }
 
 export function svgElementToCommands(
