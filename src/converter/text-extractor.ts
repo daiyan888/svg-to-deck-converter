@@ -78,6 +78,51 @@ function estimateTextBounds(text: string, fontSize: number): { width: number; he
   };
 }
 
+/**
+ * AntV FO 宽度余量仅约 1.5%，字体略差或 hinting 不同就会把末字挤到下一行。
+ * TipTap 侧再留一点水平余量，并向两侧均分以免破坏居中。
+ */
+const FOREIGN_OBJECT_WIDTH_SLACK = 1.03;
+
+/** 规范化字体名：去掉首尾引号，JSON 中存裸名（如 Alibaba PuHuiTi）。 */
+function normalizeFontFamily(value: string): string {
+  return value.trim().replace(/^['"]+|['"]+$/g, '');
+}
+
+/**
+ * 从元素自身向上解析 font-family（style / 属性），覆盖 AntV 写在 `<svg>` 上、
+ * 而 foreignObject 内 span 未显式声明的情况。
+ */
+function resolveInheritedFontFamily(el: Element, fallback: string): string {
+  let node: Element | null = el;
+  while (node) {
+    const fromStyle = parseStyleValue(node.getAttribute('style') ?? '', 'font-family');
+    if (fromStyle) {
+      return normalizeFontFamily(fromStyle);
+    }
+    const fromAttr = node.getAttribute('font-family')?.trim();
+    if (fromAttr) {
+      return normalizeFontFamily(fromAttr);
+    }
+    node = node.parentElement;
+  }
+  return fallback;
+}
+
+function applyForeignObjectWidthSlack(
+  width: number,
+  left: number,
+): { width: number; left: number } {
+  const next = Math.ceil(width * FOREIGN_OBJECT_WIDTH_SLACK);
+  if (next <= width) {
+    return { width, left };
+  }
+  return {
+    width: next,
+    left: left - (next - width) / 2,
+  };
+}
+
 function adjustTextBox(
   anchorX: number,
   anchorY: number,
@@ -303,7 +348,9 @@ function textElementToCandidate(
 
   const props = collectElementProps(el);
   const fontFamily =
-    typeof props.fontFamily === 'string' ? props.fontFamily : defaultFontFamily;
+    typeof props.fontFamily === 'string'
+      ? normalizeFontFamily(props.fontFamily)
+      : resolveInheritedFontFamily(el.parentElement ?? el, defaultFontFamily);
   const fontSize = parseFontSize(
     typeof props.fontSize === 'string' || typeof props.fontSize === 'number'
       ? props.fontSize
@@ -371,17 +418,26 @@ function foreignObjectToCandidate(
   const foStyle = el.getAttribute('style') ?? '';
   const combinedStyle = [foStyle, style].filter(Boolean).join(';');
   const fontSize = parseFontSize(parseStyleValue(style, 'font-size'), defaultFontSize);
-  const fontFamily = parseStyleValue(style, 'font-family') ?? defaultFontFamily;
+  const spanFontFamily = parseStyleValue(style, 'font-family');
+  const fontFamily = spanFontFamily
+    ? normalizeFontFamily(spanFontFamily)
+    : resolveInheritedFontFamily(el, defaultFontFamily);
   const textAlign = parseHorizontalAlign(el, combinedStyle);
   const verticalAlign = parseVerticalAlign(el, combinedStyle);
   const cssLineHeight = parseCssLineHeight(parseStyleValue(style, 'line-height'), fontSize);
   const lineHeight = toStoredLineHeight(cssLineHeight);
 
-  const width = parseNumAttr(el, 'width') ?? estimateTextBounds(content, fontSize).width;
-  const height = parseNumAttr(el, 'height') ?? estimateTextBounds(content, fontSize).height;
+  const rawWidth = parseNumAttr(el, 'width');
+  const estimated = estimateTextBounds(content, fontSize);
+  const height = parseNumAttr(el, 'height') ?? estimated.height;
 
   const anchor = getAbsoluteAnchor(el);
-  const { left, top } = toDeckCoords(anchor.x, anchor.y, viewBox);
+  let { left, top } = toDeckCoords(anchor.x, anchor.y, viewBox);
+  let width = rawWidth ?? estimated.width;
+  // 仅对 AntV 精确测量过的 FO 宽度加余量；估算宽度本身已较松
+  if (rawWidth !== undefined) {
+    ({ width, left } = applyForeignObjectWidthSlack(width, left));
+  }
   const { color, textGradientColor } = parseTextColor({ style, svgRoot });
 
   return {

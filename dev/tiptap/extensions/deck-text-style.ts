@@ -24,11 +24,16 @@ export const DeckTextStyle = Mark.create({
 
   renderHTML({ HTMLAttributes }) {
     const { fontFamily, fontSize } = HTMLAttributes;
+    // 多词字体名在 CSS 字符串里需要引号；attrs 里存的是裸名
+    const cssFontFamily =
+      typeof fontFamily === 'string' && /\s/.test(fontFamily) && !/^['"]/.test(fontFamily)
+        ? `"${fontFamily.replace(/"/g, '')}"`
+        : fontFamily;
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
         'data-text-style': '',
-        style: `font-family:${fontFamily};font-size:${fontSize};line-height:var(--data-line-height);`,
+        style: `font-family:${cssFontFamily};font-size:${fontSize};line-height:var(--data-line-height);`,
       }),
       0,
     ];

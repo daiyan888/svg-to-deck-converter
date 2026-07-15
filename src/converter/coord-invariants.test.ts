@@ -68,8 +68,12 @@ describe('cross-template coordinate invariants (synthetic AntV-like SVG)', () =>
     expect(labelA).toBeTruthy();
 
     // ItemA FO world y = 40+0 = 40；相对 viewBox → top = 40 - minY
+    // FO 宽度会加 3% 余量并向两侧均分，中心仍对齐原始 FO
+    const foWidth = 80;
+    const slackWidth = Math.ceil(foWidth * 1.03);
     expect(labelA!.attrs.top).toBeCloseTo(40 - minY, 5);
-    expect(labelA!.attrs.left).toBeCloseTo(20 - minX, 5);
+    expect(labelA!.attrs.width).toBe(slackWidth);
+    expect(labelA!.attrs.left + labelA!.attrs.width / 2).toBeCloseTo(20 + foWidth / 2 - minX, 5);
 
     // 第一根柱 world y=40
     expect(rects[0].attrs.top).toBeCloseTo(40 - minY, 5);
