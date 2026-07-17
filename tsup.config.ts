@@ -16,14 +16,31 @@ const shared: Options = {
 
 const cjsOutExtension: NonNullable<Options['outExtension']> = () => ({ js: '.cjs' });
 
+const measuryFontStub = resolve(__dirname, 'src/stubs/measury-font.ts');
+
 const browserAlias = {
   '@antv/infographic/ssr': resolve(__dirname, 'src/stubs/infographic-ssr.ts'),
   'svg-to-deck-local-fonts': resolve(__dirname, 'src/stubs/local-fonts.ts'),
+  // measury 仅 Node SSR 需要；浏览器走 DOM 量字，避免产物留下外部 import
+  measury: resolve(__dirname, 'src/stubs/measury.ts'),
+  'measury/fonts/AlibabaPuHuiTi-Regular': measuryFontStub,
+  'measury/fonts/851tegakizatsu-Regular': measuryFontStub,
+  'measury/fonts/Arial-Regular': measuryFontStub,
+  'measury/fonts/LXGWWenKai-Regular': measuryFontStub,
+  'measury/fonts/SourceHanSans-Regular': measuryFontStub,
+  'measury/fonts/SourceHanSerif-Regular': measuryFontStub,
 };
 
 const nodeAlias = {
   'svg-to-deck-local-fonts': resolve(__dirname, 'src/gallery/local-fonts.ts'),
 };
+
+// dependencies 默认 external；必须 noExternal 后 alias 才会生效，否则仍留下 import 'measury'
+const browserNoExternal = [
+  /@antv\/infographic/,
+  'measury',
+  /^measury\//,
+] as const;
 
 const nodeNoExternal = [
   /@antv\/infographic/,
@@ -54,6 +71,7 @@ export default defineConfig([
     platform: 'browser',
     clean: true,
     dts: true,
+    noExternal: [...browserNoExternal],
     esbuildOptions(options) {
       options.alias = browserAlias;
     },
@@ -70,6 +88,7 @@ export default defineConfig([
     clean: false,
     dts: false,
     outExtension: cjsOutExtension,
+    noExternal: [...browserNoExternal],
     esbuildOptions(options) {
       options.alias = browserAlias;
     },
