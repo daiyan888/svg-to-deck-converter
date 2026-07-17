@@ -70,5 +70,8 @@
     "typescript": "~6.0.2",
     "vite": "^6.4.3",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "measury": "^0.1.5"
   }
 }

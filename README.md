@@ -237,6 +237,24 @@ validateInfographicInput({
 
 `data` 与 `syntax` 必须二选一传入。`data` 需为对象，且至少包含非空的 `values` / `items` / `lists` / `sequences` / `compares` / `nodes` / `root` / `relations` 之一；`syntax` 需能解析出模板与 `data` 区块，且模板 slug 须存在于 AntV 本地模板列表（`getTemplates()`，无网络请求）。
 
+## Node 字体与文字宽度
+
+Node SSR 量字走 AntV → `measury`（不是读系统 TTF）。下列字体可直接写在 Syntax 里，无需额外注册：
+
+| Syntax `font-family` | 说明 |
+|------|------|
+| `Alibaba PuHuiTi`（默认） | AntV 内置 |
+| `Source Han Sans` / `Source Han Serif` / `LXGW WenKai` / `851tegakizatsu` | AntV 内置 |
+| `Microsoft YaHei` / `微软雅黑` | 本包自动识别（CJK 度量与 Alibaba PuHuiTi 同源） |
+
+```ts
+await convertInfographicFromSyntax({
+  syntax: `... font-family Microsoft YaHei ...`,
+});
+```
+
+量字只影响 deckNode 宽度；TipTap 端视觉仍依赖客户端有对应字体。
+
 ## 本地开发
 
 ```bash

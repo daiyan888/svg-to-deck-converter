@@ -91,6 +91,10 @@ async function renderInNode(
   const { ensureLocalFontFetchInstalled } = await import('svg-to-deck-local-fonts');
   ensureLocalFontFetchInstalled();
 
+  // Microsoft YaHei / 微软雅黑 → 内置中文度量，避免 SSR 回退 Arial 导致文字宽度错
+  const { ensureSystemFontMeasureAliases } = await import('../measure-font.js');
+  ensureSystemFontMeasureAliases();
+
   const { renderToString } = await import('@antv/infographic/ssr');
   const svg = await renderToString(options as Parameters<typeof renderToString>[0], {
     width: size.width ?? RENDER_WIDTH,
